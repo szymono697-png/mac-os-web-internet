@@ -1,0 +1,2815 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>macOS Catalina</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--desktop-start) 0%, var(--desktop-end) 100%);
+            --glass-blur: 32px;
+            --glass-saturation: 1.8;
+            --glass-opacity: 0.72;
+            --glass-secondary-opacity: 0.42;
+            --menu-opacity: 0.9;
+            --menu-blur: 10px;
+            --accent-color: #3478f6;
+            --desktop-start: #667eea;
+            --desktop-end: #764ba2;
+        }
+
+        /* Menu bar */
+        .menu-bar {
+            position: relative;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, var(--menu-opacity));
+        }
+
+        .menu-transparent .menu-bar {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+            backdrop-filter: blur(var(--menu-blur));
+            -webkit-backdrop-filter: blur(var(--menu-blur));
+            font-size: 13px;
+        }
+
+        .menu-left {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .apple-logo {
+            font-size: 16px;
+            color: #333;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 150px minmax(0, 1fr);
+            gap: 16px;
+            min-height: 330px;
+        }
+
+        .settings-sidebar {
+            display: grid;
+            align-content: start;
+            align-self: start;
+            gap: 5px;
+            max-height: 56vh;
+            overflow-y: auto;
+            padding: 8px;
+            border: 1px solid rgba(255,255,255,.55);
+            border-radius: 12px;
+            background: rgba(255,255,255,.2);
+        }
+
+        .settings-category {
+            padding: 9px 10px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #333;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .settings-category[aria-pressed="true"], .settings-category:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .settings-panel[hidden] {
+            display: none;
+        }
+
+        .settings-panel h2 {
+            margin-bottom: 6px;
+            color: #30384a;
+            font-size: 19px;
+        }
+
+        .settings-panel > p {
+            margin-bottom: 14px;
+            font-size: 13px;
+        }
+
+        .settings-section {
+            margin-top: 14px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,.62);
+            border-radius: 11px;
+            background: rgba(255,255,255,.28);
+        }
+
+        .settings-section h3 {
+            margin-bottom: 8px;
+            color: #30384a;
+            font-size: 14px;
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .settings-row + .settings-row {
+            border-top: 1px solid rgba(60,70,90,.12);
+        }
+
+        .settings-row input[type="checkbox"] {
+            accent-color: var(--accent-color);
+        }
+
+        .settings-panel > input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-color);
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .theme-card {
+            display: grid;
+            gap: 8px;
+            padding: 9px;
+            border: 1px solid rgba(255,255,255,.65);
+            border-radius: 12px;
+            background: rgba(255,255,255,.3);
+            color: #30384a;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .theme-card[aria-pressed="true"] {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 1px;
+        }
+
+        .theme-preview {
+            display: flex;
+            align-items: end;
+            gap: 5px;
+            height: 66px;
+            padding: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,.7);
+            border-radius: 8px;
+        }
+
+        .theme-preview span {
+            height: 25px;
+            flex: 1;
+            border: 1px solid rgba(255,255,255,.55);
+            border-radius: 5px;
+            background: rgba(255,255,255,.55);
+            backdrop-filter: blur(8px);
+        }
+
+        .app-settings-list {
+            display: grid;
+            gap: 7px;
+        }
+
+        .app-settings-row {
+            display: grid;
+            grid-template-columns: 32px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 9px;
+            background: rgba(255,255,255,.3);
+        }
+
+        .app-settings-icon {
+            font-size: 22px;
+            text-align: center;
+        }
+
+        .app-settings-name {
+            color: #30384a;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 520px) {
+            .settings-layout {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .settings-sidebar {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .settings-category {
+                padding: 8px 4px;
+                font-size: 12px;
+                text-align: center;
+            }
+        }
+
+        .menu-group {
+            position: relative;
+        }
+
+        .menu-item {
+            border: 0;
+            background: transparent;
+            color: #222;
+            font: inherit;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        .menu-item:hover, .menu-item[aria-expanded="true"], .apple-logo:hover, .apple-logo[aria-expanded="true"] {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            z-index: 1000;
+            width: max-content;
+            min-width: 220px;
+            padding: 6px;
+            border: 1px solid rgba(255,255,255,.7);
+            border-radius: 10px;
+            background: rgba(248,250,255,.78);
+            backdrop-filter: blur(24px) saturate(1.7);
+            -webkit-backdrop-filter: blur(24px) saturate(1.7);
+            box-shadow: 0 12px 32px rgba(20,25,55,.24), inset 0 1px rgba(255,255,255,.8);
+        }
+
+        .menu-dropdown[hidden] {
+            display: none;
+        }
+
+        .menu-command {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            width: 100%;
+            padding: 7px 10px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: #222;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .menu-command:hover, .menu-command:focus-visible {
+            background: var(--accent-color);
+            color: white;
+            outline: none;
+        }
+
+        .menu-shortcut {
+            opacity: .65;
+            white-space: nowrap;
+        }
+
+        .menu-separator {
+            height: 1px;
+            margin: 5px 8px;
+            background: rgba(40,50,70,.18);
+        }
+
+        .menu-empty {
+            padding: 8px 10px;
+            color: #667085;
+            font-size: 12px;
+        }
+
+        .menu-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .menu-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .menu-status {
+            position: relative;
+        }
+
+        .menu-status-button {
+            padding: 3px 4px;
+            border: 0;
+            border-radius: 5px;
+            background: transparent;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .menu-status-button:hover, .menu-status-button[aria-expanded="true"] {
+            background: rgba(0,0,0,.1);
+        }
+
+        .menu-right .menu-dropdown {
+            right: 0;
+            left: auto;
+        }
+
+        .user-menu {
+            min-width: 230px;
+        }
+
+        .system-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: grid;
+            place-items: center;
+            color: white;
+            background:
+                radial-gradient(ellipse at 18% 18%, rgba(119, 142, 255, .75), transparent 40%),
+                radial-gradient(ellipse at 82% 78%, rgba(144, 87, 206, .7), transparent 42%),
+                linear-gradient(135deg, #121b3b, #312047 55%, #10172f);
+        }
+
+        .system-screen[hidden] {
+            display: none;
+        }
+
+        .login-card {
+            display: grid;
+            justify-items: center;
+            gap: 12px;
+            width: min(360px, calc(100vw - 32px));
+            padding: 32px;
+            border: 1px solid rgba(255,255,255,.32);
+            border-radius: 24px;
+            background: rgba(255,255,255,.12);
+            backdrop-filter: blur(28px) saturate(1.5);
+            -webkit-backdrop-filter: blur(28px) saturate(1.5);
+            box-shadow: 0 24px 80px rgba(0,0,0,.3), inset 0 1px rgba(255,255,255,.35);
+            text-align: center;
+        }
+
+        .setup-card, .welcome-card {
+            display: grid;
+            gap: 12px;
+            width: min(440px, calc(100vw - 32px));
+            padding: 28px;
+            border: 1px solid rgba(255,255,255,.32);
+            border-radius: 24px;
+            background: rgba(255,255,255,.14);
+            backdrop-filter: blur(28px) saturate(1.5);
+            -webkit-backdrop-filter: blur(28px) saturate(1.5);
+            box-shadow: 0 24px 80px rgba(0,0,0,.3), inset 0 1px rgba(255,255,255,.35);
+        }
+
+        .setup-card[hidden], .welcome-card[hidden] { display: none; }
+        .setup-card h1, .welcome-card h1 { margin: 0; color: white; }
+        .setup-card p, .welcome-card p { color: rgba(255,255,255,.82); }
+        .setup-card label { display: grid; gap: 6px; color: white; font-size: 13px; }
+        .setup-card input[type="text"], .setup-card input[type="password"],
+        .login-card input[type="password"], .setup-card select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(255,255,255,.45);
+            border-radius: 10px;
+            background: rgba(255,255,255,.86);
+            color: #263047;
+            font: inherit;
+        }
+        .setup-card .setup-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .setup-note { font-size: 12px; }
+        .setup-error { min-height: 18px; color: #ffe0e0 !important; font-size: 13px; }
+        .login-card form { display: grid; width: 100%; gap: 10px; }
+        .login-card [data-login-error] { min-height: 18px; font-size: 13px; }
+        .login-actions {
+            display: grid;
+            gap: 4px;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .login-action-button {
+            padding: 8px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: rgba(255,255,255,.9);
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .login-action-button:hover {
+            background: rgba(255,255,255,.12);
+        }
+
+        .login-action-button:focus-visible {
+            outline: 2px solid white;
+            outline-offset: 2px;
+        }
+
+        .login-avatar {
+            display: grid;
+            place-items: center;
+            width: 82px;
+            height: 82px;
+            border: 1px solid rgba(255,255,255,.55);
+            border-radius: 50%;
+            background: linear-gradient(145deg, rgba(255,255,255,.42), rgba(255,255,255,.12));
+            font-size: 42px;
+            box-shadow: 0 8px 26px rgba(0,0,0,.2), inset 0 1px rgba(255,255,255,.55);
+        }
+
+        .login-card h1 {
+            margin: 4px 0 0;
+            color: white;
+            font-size: 24px;
+        }
+
+        .login-card p {
+            color: rgba(255,255,255,.8);
+        }
+
+        .screen-button {
+            min-width: 150px;
+            margin-top: 6px;
+            padding: 10px 18px;
+            border: 1px solid rgba(255,255,255,.5);
+            border-radius: 12px;
+            background: rgba(255,255,255,.86);
+            color: #263047;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,0,0,.16);
+        }
+
+        .screen-button:hover {
+            background: white;
+        }
+
+        .screen-button:focus-visible {
+            outline: 2px solid white;
+            outline-offset: 3px;
+        }
+
+        .loading-content {
+            display: grid;
+            justify-items: center;
+            gap: 18px;
+            text-align: center;
+        }
+
+        .loading-content[hidden] {
+            display: none;
+        }
+
+        .loading-spinner {
+            width: 42px;
+            height: 42px;
+            border: 3px solid rgba(255,255,255,.24);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: system-spin .8s linear infinite;
+        }
+
+        @keyframes system-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .system-progress {
+            width: min(220px, 60vw);
+            height: 4px;
+            overflow: hidden;
+            border-radius: 4px;
+            background: rgba(255,255,255,.24);
+        }
+
+        .system-progress::after {
+            display: block;
+            width: 35%;
+            height: 100%;
+            border-radius: inherit;
+            background: white;
+            content: "";
+            animation: system-progress 1.8s ease-in-out infinite;
+        }
+
+        @keyframes system-progress {
+            from { transform: translateX(-110%); }
+            to { transform: translateX(310%); }
+        }
+
+        .system-cancel {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            border: 0;
+            background: transparent;
+            color: rgba(255,255,255,.78);
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .system-cancel:hover {
+            color: white;
+        }
+
+        .menu-dropdown input[type="search"] {
+            width: 100%;
+            margin-bottom: 5px;
+            padding: 7px 9px;
+            border: 1px solid rgba(70,80,110,.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,.65);
+            font: inherit;
+        }
+
+        @media (max-width: 760px) {
+            .menu-bar { padding: 6px 8px; }
+            .menu-left { gap: 0; }
+            .menu-item { padding: 4px 5px; }
+            .menu-right { gap: 5px; }
+            .menu-status-button { font-size: 11px; }
+            .menu-left .menu-group:nth-child(n+3) { display: none; }
+            .menu-right > .time-date { display: none; }
+            .menu-indicator-label { display: none; }
+            .menu-status-button .menu-indicator-label { display: none; }
+            .menu-dropdown { min-width: 190px; }
+        }
+
+        .time-date {
+            font-size: 13px;
+        }
+
+        /* Desktop icons */
+        .desktop {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-wrap: wrap;
+            height: calc(100vh - 28px);
+        }
+
+        .icon {
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        .icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .icon-emoji {
+            font-size: 48px;
+            margin-bottom: 6px;
+        }
+
+        .icon-label {
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* Dock */
+        .dock-container {
+            position: fixed;
+            z-index: 1500;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: transform .25s ease;
+        }
+
+        .dock {
+            max-width: calc(100vw - 20px);
+            overflow-x: auto;
+            background: rgba(255, 255, 255, .3);
+            backdrop-filter: blur(15px) saturate(1.5);
+            -webkit-backdrop-filter: blur(15px) saturate(1.5);
+            border-radius: 16px;
+            padding: 8px;
+            display: flex;
+            align-items: end;
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .dock-item {
+            width: var(--dock-icon-size, 50px);
+            height: var(--dock-icon-size, 50px);
+            flex: 0 0 var(--dock-icon-size, 50px);
+            padding: 0;
+            border: 0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: inherit;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform .2s, margin-bottom .2s, width .2s, height .2s;
+            position: relative;
+        }
+
+        .dock-item:hover {
+            transform: scale(var(--dock-magnification, 1.15)) translateY(-8px);
+            margin-bottom: 8px;
+        }
+
+        .dock-item[aria-pressed="true"]::after {
+            position: absolute;
+            right: 50%;
+            bottom: -6px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: white;
+            content: "";
+            transform: translateX(50%);
+        }
+
+        .dock-context-menu {
+            position: fixed;
+            z-index: 2100;
+            width: 220px;
+            padding: 6px;
+            border: 1px solid rgba(255,255,255,.7);
+            border-radius: 12px;
+            background: rgba(248,250,255,.9);
+            backdrop-filter: blur(22px) saturate(1.5);
+            -webkit-backdrop-filter: blur(22px) saturate(1.5);
+            box-shadow: 0 12px 32px rgba(20,25,55,.3);
+        }
+
+        .dock-context-menu[hidden] { display: none; }
+        .dock-context-menu { max-height: min(70vh, 480px); overflow-y: auto; }
+        .dock-context-menu .menu-command { min-height: 34px; }
+        .dock-hidden .dock-container { transform: translate(-50%, calc(100% - 4px)); }
+        .dock-hidden .dock-container:hover,
+        .dock-hidden .dock-container:focus-within { transform: translate(-50%, 0); }
+
+        @keyframes minimize-window {
+            to { opacity: .25; transform: translateY(44px) scale(.12); }
+        }
+
+        @keyframes restore-window {
+            from { opacity: .25; transform: translateY(38px) scale(.12); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .window.is-minimizing { animation: minimize-window .24s cubic-bezier(.4,0,.8,.2) forwards; }
+        .window.is-restoring { animation: restore-window .24s cubic-bezier(.2,.8,.2,1); }
+
+        .launchpad-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 18px 12px;
+        }
+
+        .launchpad-app {
+            display: grid;
+            justify-items: center;
+            align-content: start;
+            gap: 7px;
+            min-height: 100px;
+            padding: 8px 4px;
+            border: 0;
+            border-radius: 12px;
+            background: transparent;
+            color: white;
+            font: inherit;
+            text-align: center;
+            text-shadow: 0 1px 4px rgba(0,0,0,.45);
+            cursor: pointer;
+        }
+
+        .launchpad-app:hover, .launchpad-app:focus-visible {
+            background: rgba(255,255,255,.18);
+            outline: 1px solid rgba(255,255,255,.55);
+        }
+
+        .launchpad-icon {
+            display: grid;
+            place-items: center;
+            width: 58px;
+            height: 58px;
+            border: 1px solid rgba(255,255,255,.58);
+            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(255,255,255,.88), rgba(220,230,255,.6));
+            box-shadow: 0 8px 18px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.85);
+            font-size: 34px;
+            text-shadow: none;
+        }
+
+        .launchpad-window .title-bar,
+        .launchpad-window .window-content {
+            background: rgba(24,30,56,.3);
+        }
+
+        .launchpad-window .window-title,
+        .launchpad-window .window-content h1 {
+            color: white;
+        }
+
+        .icon-pack-minimal .launchpad-icon {
+            border-radius: 50%;
+            background: rgba(255,255,255,.22);
+            color: white;
+            font-size: 30px;
+        }
+
+        .dock-settings-controls {
+            display: grid;
+            gap: 10px;
+        }
+
+        .dock-settings-controls .settings-row { border: 0; }
+
+        .office-sheet {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(70px, 1fr));
+            overflow: auto;
+            border: 1px solid rgba(70,80,110,.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,.55);
+        }
+
+        .office-cell {
+            min-width: 70px;
+            height: 36px;
+            padding: 5px 7px;
+            border: 0;
+            border-right: 1px solid rgba(70,80,110,.15);
+            border-bottom: 1px solid rgba(70,80,110,.15);
+            border-radius: 0 !important;
+            background: transparent !important;
+            font-size: 13px;
+        }
+
+        .office-cell:focus { outline: 2px solid var(--accent-color); }
+
+
+        /* Dock item icons */
+        .finder { background: linear-gradient(135deg, #1c92d2 0%, #167fa8 100%); }
+        .safari { background: white; }
+        .messages { background: #4cd964; }
+        .photos { background: white; }
+        .music { background: #ff3b30; }
+        .settings { background: #8e8e93; }
+
+        /* Window */
+        .window {
+            position: absolute;
+            width: 600px;
+            max-width: calc(100vw - 32px);
+            min-width: 280px;
+            color: #333;
+            background: linear-gradient(135deg, rgba(255,255,255,var(--glass-opacity)), rgba(235,241,255,var(--glass-secondary-opacity)));
+            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(20, 25, 55, 0.3), inset 0 1px rgba(255, 255, 255, 0.9), inset 0 0 24px rgba(255,255,255,.15);
+            overflow: hidden;
+            z-index: 2;
+            animation: window-appear .22s ease-out;
+            transition: box-shadow .2s, border-color .2s;
+        }
+
+        .window.is-active {
+            border-color: rgba(255,255,255,.95);
+            box-shadow: 0 24px 70px rgba(20, 25, 55, 0.38), inset 0 1px rgba(255, 255, 255, 1), inset 0 0 28px rgba(255,255,255,.2);
+        }
+
+        .window[hidden] {
+            display: none;
+        }
+
+        @keyframes window-appear {
+            from { opacity: 0; scale: .97; }
+            to { opacity: 1; scale: 1; }
+        }
+
+        .title-bar {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.34);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+            cursor: grab;
+            user-select: none;
+        }
+
+        .title-bar:active {
+            cursor: grabbing;
+        }
+
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+        }
+
+        .light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 0;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .light:focus-visible, .dock-item:focus-visible, .icon:focus-visible, .app-button:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 3px;
+        }
+
+        .window-title {
+            color: #333;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .window.is-maximized {
+            position: fixed;
+            top: 36px !important;
+            left: 8px !important;
+            right: 8px;
+            bottom: 32px;
+            width: auto;
+            max-width: none;
+            border-radius: 0;
+        }
+
+        .window.is-minimized {
+            position: fixed;
+            top: auto !important;
+            bottom: 42px;
+            width: 210px;
+            min-width: 0;
+        }
+
+        .no-glass .window {
+            background: rgba(245, 248, 255, .97);
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+
+        .glass-control {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 5px 12px;
+            margin-top: 16px;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .glass-control input[type="range"] {
+            grid-column: 1 / -1;
+            width: 100%;
+            accent-color: var(--accent-color);
+        }
+
+        .glass-control output {
+            min-width: 52px;
+            color: #59647a;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .accent-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .accent-control input[type="color"] {
+            width: 42px;
+            height: 32px;
+            padding: 2px;
+            border: 1px solid rgba(70,80,110,.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,.62);
+            cursor: pointer;
+        }
+
+        .icon-pack-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .icon-pack-control select {
+            max-width: 180px;
+            padding: 6px 8px;
+            border: 1px solid rgba(70,80,110,.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,.62);
+            color: #263047;
+            font: inherit;
+        }
+
+        .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+            animation-duration: .01ms !important;
+            transition-duration: .01ms !important;
+            scroll-behavior: auto !important;
+        }
+
+        .window.is-minimized .window-content {
+            display: none;
+        }
+
+        .red { background: #ff5f57; border: 2px solid #e0443e; }
+        .yellow { background: #febc2e; border: 2px solid #eaac03; }
+        .green { background: #28c840; border: 2px solid #1aab19; }
+
+        .window-content {
+            padding: 20px;
+            max-height: min(70vh, 620px);
+            overflow: auto;
+        }
+
+        .app-panel {
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,.7);
+            border-radius: 14px;
+            background: rgba(255,255,255,.28);
+            box-shadow: inset 0 1px rgba(255,255,255,.75);
+        }
+
+        .app-panel input, .app-panel textarea {
+            width: 100%;
+            border: 1px solid rgba(70,80,110,.18);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #263047;
+            background: rgba(255,255,255,.62);
+            font: inherit;
+        }
+
+        .app-panel textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .app-button, .calc-key {
+            border: 1px solid rgba(255,255,255,.65);
+            border-radius: 10px;
+            padding: 9px 13px;
+            background: rgba(255,255,255,.48);
+            color: #263047;
+            font: inherit;
+            cursor: pointer;
+            transition: background .15s, transform .15s;
+        }
+
+        .app-button:hover, .calc-key:hover {
+            background: rgba(255,255,255,.78);
+            transform: translateY(-1px);
+        }
+
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .file-tile {
+            padding: 14px 8px;
+            border-radius: 12px;
+            text-align: center;
+            background: rgba(255,255,255,.3);
+        }
+
+        .calc-display {
+            margin-bottom: 10px;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,.65);
+            text-align: right;
+            font-size: 24px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+        }
+
+        .calc-key {
+            padding: 12px 4px;
+            font-size: 16px;
+        }
+
+        .app-status {
+            min-height: 20px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #46536b;
+        }
+
+        .task-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .task-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 9px;
+            background: rgba(255,255,255,.35);
+        }
+
+        .task-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .task-state {
+            color: #59647a;
+            font-size: 12px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+
+        p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Menu bar -->
+    <div class="menu-bar">
+        <div class="menu-left">
+            <div class="menu-group">
+                <button class="apple-logo" type="button" aria-label="Menu Apple" aria-expanded="false"></button>
+                <div class="menu-dropdown" role="menu" hidden>
+                    <button class="menu-command" role="menuitem" data-menu-action="about">Ten Mac</button>
+                    <div class="menu-separator"></div>
+                    <button class="menu-command" role="menuitem" data-menu-action="task-manager">Menedżer zadań <span class="menu-shortcut">⌥⌘Esc</span></button>
+                    <button class="menu-command" role="menuitem" data-menu-action="close-all">Zamknij wszystkie okna <span class="menu-shortcut">⌥⌘W</span></button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-item" type="button" aria-expanded="false">Finder</button>
+                <div class="menu-dropdown" role="menu" hidden>
+                    <button class="menu-command" role="menuitem" data-menu-action="open-app" data-app-name="Finder">Otwórz Finder</button>
+                    <button class="menu-command" role="menuitem" data-menu-action="open-app" data-app-name="Launchpad">Otwórz Launchpad</button>
+                    <button class="menu-command" role="menuitem" data-menu-action="open-app" data-app-name="Ustawienia">Ustawienia…</button>
+                    <div class="menu-separator"></div>
+                    <button class="menu-command" role="menuitem" data-menu-action="task-manager">Menedżer zadań</button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-item" type="button" aria-expanded="false">Plik</button>
+                <div class="menu-dropdown" role="menu" hidden>
+                    <button class="menu-command" role="menuitem" data-menu-action="open-app" data-app-name="Finder">Nowe okno Findera <span class="menu-shortcut">⌘N</span></button>
+                    <button class="menu-command" role="menuitem" data-menu-action="open-app" data-app-name="Notatki">Nowa notatka</button>
+                    <div class="menu-separator"></div>
+                    <button class="menu-command" role="menuitem" data-menu-action="close-active">Zamknij okno <span class="menu-shortcut">⌘W</span></button>
+                    <button class="menu-command" role="menuitem" data-menu-action="close-all">Zamknij wszystkie okna <span class="menu-shortcut">⌥⌘W</span></button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-item" type="button" aria-expanded="false">Edycja</button>
+                <div class="menu-dropdown" role="menu" hidden>
+                    <button class="menu-command" role="menuitem" data-menu-action="edit" data-command="undo">Cofnij <span class="menu-shortcut">⌘Z</span></button>
+                    <button class="menu-command" role="menuitem" data-menu-action="edit" data-command="cut">Wytnij <span class="menu-shortcut">⌘X</span></button>
+                    <button class="menu-command" role="menuitem" data-menu-action="edit" data-command="copy">Kopiuj <span class="menu-shortcut">⌘C</span></button>
+                    <button class="menu-command" role="menuitem" data-menu-action="edit" data-command="paste">Wklej <span class="menu-shortcut">⌘V</span></button>
+                    <button class="menu-command" role="menuitem" data-menu-action="edit" data-command="selectAll">Zaznacz wszystko <span class="menu-shortcut">⌘A</span></button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-item" type="button" aria-expanded="false">Widok</button>
+                <div class="menu-dropdown" role="menu" hidden>
+                    <button class="menu-command" role="menuitem" data-menu-action="toggle-maximize">Powiększ / przywróć okno</button>
+                    <button class="menu-command" role="menuitem" data-menu-action="show-desktop">Pokaż pulpit</button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-item" type="button" aria-expanded="false">Idź</button>
+                <div class="menu-dropdown" role="menu" hidden>
+                    <button class="menu-command" role="menuitem" data-menu-action="open-app" data-app-name="This Mac">Ten Mac</button>
+                    <button class="menu-command" role="menuitem" data-menu-action="open-app" data-app-name="Finder">Ostatnie</button>
+                    <button class="menu-command" role="menuitem" data-menu-action="open-app" data-app-name="Kosz">Kosz</button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-item" type="button" aria-expanded="false">Okno</button>
+                <div class="menu-dropdown" role="menu" data-window-menu hidden>
+                    <button class="menu-command" role="menuitem" data-menu-action="minimize-active">Minimalizuj <span class="menu-shortcut">⌘M</span></button>
+                    <button class="menu-command" role="menuitem" data-menu-action="toggle-maximize">Powiększ / przywróć</button>
+                    <button class="menu-command" role="menuitem" data-menu-action="close-all">Zamknij wszystkie okna <span class="menu-shortcut">⌥⌘W</span></button>
+                    <div class="menu-separator"></div>
+                    <div data-window-list></div>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-item" type="button" aria-expanded="false">Pomoc</button>
+                <div class="menu-dropdown" role="menu" hidden>
+                    <button class="menu-command" role="menuitem" data-menu-action="help">Pomoc macOS</button>
+                    <button class="menu-command" role="menuitem" data-menu-action="task-manager">Otwórz menedżer zadań</button>
+                </div>
+            </div>
+        </div>
+        <div class="menu-right">
+            <span class="menu-indicator" role="status" aria-label="Bluetooth"><span data-bluetooth-icon aria-hidden="true">🔵</span><span class="menu-indicator-label" data-bluetooth-label>Bluetooth</span></span>
+            <span class="menu-indicator" role="status" aria-label="FalC"><span aria-hidden="true">🔵</span><span class="menu-indicator-label">FalC</span></span>
+            <span class="menu-indicator" role="status" aria-label="AirPlay"><span aria-hidden="true">📡</span><span class="menu-indicator-label">AirPlay</span></span>
+            <span class="menu-indicator" role="status" aria-label="VoiceMn"><span aria-hidden="true">🎙️</span><span class="menu-indicator-label">VoiceMn</span></span>
+            <span class="menu-indicator" role="status" aria-label="Volume"><span data-volume-icon aria-hidden="true">🔊</span><span class="menu-indicator-label">Volume</span></span>
+            <div class="menu-status">
+                <button class="menu-status-button" type="button" aria-expanded="false" aria-label="Stan baterii"><span data-battery-icon aria-hidden="true">🔋</span> <span class="menu-indicator-label" data-battery-level>100%</span></button>
+                <div class="menu-dropdown" role="menu" hidden><div class="menu-empty" data-battery-status>Bateria jest naładowana.</div><button class="menu-command" role="menuitem" data-menu-action="open-settings-category" data-category="battery">Ustawienia baterii</button></div>
+            </div>
+            <div class="menu-status">
+                <button class="menu-status-button" type="button" aria-expanded="false" aria-label="Sieć Wi-Fi"><span aria-hidden="true">📶</span> <span class="menu-indicator-label" data-wifi-label>Wi-Fi</span></button>
+                <div class="menu-dropdown" role="menu" hidden><div class="menu-empty" data-wifi-status>Połączono z siecią Wi-Fi.</div><button class="menu-command" role="menuitem" data-menu-action="wifi">Wyłącz Wi-Fi</button><button class="menu-command" role="menuitem" data-menu-action="open-settings-category" data-category="network">Ustawienia sieci</button></div>
+            </div>
+            <div class="menu-status">
+                <button class="menu-status-button" type="button" aria-expanded="false" aria-label="Szukaj">🔍</button>
+                <div class="menu-dropdown" role="menu" hidden><input type="search" data-spotlight placeholder="Szukaj aplikacji…" aria-label="Szukaj aplikacji"><div data-search-results></div></div>
+            </div>
+            <div class="menu-status">
+                <button class="menu-status-button" type="button" aria-expanded="false" aria-label="Menu użytkownika">👤</button>
+                <div class="menu-dropdown user-menu" role="menu" hidden>
+                    <div class="menu-empty">Zalogowano jako <strong data-current-user>Użytkownik</strong></div>
+                    <button class="menu-command" role="menuitem" data-menu-action="login-screen">Ekran logowania</button>
+                    <div class="menu-separator"></div>
+                    <button class="menu-command" role="menuitem" data-menu-action="restart-system">Uruchom ponownie…</button>
+                </div>
+            </div>
+            <span class="time-date" id="clock"></span>
+        </div>
+    </div>
+
+    <section class="system-screen" id="system-screen" aria-live="polite" hidden>
+        <form class="setup-card" id="setup-screen" hidden>
+            <h1 data-setup-title>Witamy w macOS Catalina</h1>
+            <p data-setup-description>Skonfiguruj swoje konto i wygląd pulpitu.</p>
+            <label for="setup-username">Nazwa użytkownika
+                <input id="setup-username" name="username" type="text" maxlength="40" autocomplete="nickname" required>
+            </label>
+            <label for="setup-password">Hasło (opcjonalnie)
+                <input id="setup-password" name="password" type="password" autocomplete="new-password">
+            </label>
+            <label for="setup-password-confirm">Powtórz hasło
+                <input id="setup-password-confirm" name="passwordConfirm" type="password" autocomplete="new-password">
+            </label>
+            <label class="setup-checkbox"><input type="checkbox" name="skip-password" data-setup-skip-password> Pomiń hasło — logowanie bez hasła</label>
+            <label for="setup-theme">Motyw pulpitu
+                <select id="setup-theme" name="theme">
+                    <option value="catalina">Catalina</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="sunset">Zachód słońca</option>
+                    <option value="graphite">Grafit</option>
+                    <option value="forest">Las</option>
+                </select>
+            </label>
+            <p class="setup-note" data-setup-note>To konto działa wyłącznie w tej symulacji przeglądarkowej.</p>
+            <p class="setup-error" data-setup-error aria-live="polite"></p>
+            <button class="screen-button" type="submit">Zakończ konfigurację</button>
+            <button class="login-action-button" type="button" data-setup-cancel hidden>Anuluj i wróć do logowania</button>
+        </form>
+        <div class="login-card" id="login-screen" hidden>
+            <div class="login-avatar" aria-hidden="true">👤</div>
+            <h1 data-login-username>Użytkownik</h1>
+            <p>macOS Catalina</p>
+            <form data-login-form>
+                <label for="login-password" data-login-password-label hidden>Hasło
+                    <input id="login-password" type="password" autocomplete="current-password">
+                </label>
+                <p data-login-error aria-live="polite"></p>
+                <button class="screen-button" type="submit">Zaloguj</button>
+            </form>
+            <div class="login-actions">
+                <button class="login-action-button" type="button" data-login-action="reconfigure">Ponowna konfiguracja</button>
+                <button class="login-action-button" type="button" data-login-action="factory-reset">Przywróć ustawienia fabryczne</button>
+            </div>
+        </div>
+        <div class="welcome-card" id="welcome-screen" hidden><h1 data-welcome-message></h1><p>Przygotowujemy Twój pulpit…</p></div>
+        <div class="loading-content" id="loading-screen" hidden>
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <p id="loading-message">Uruchamianie systemu…</p>
+            <div class="system-progress" aria-hidden="true"></div>
+        </div>
+    </section>
+
+    <!-- Desktop icons -->
+    <div class="desktop">
+        <button class="icon" type="button" data-app="This Mac">
+            <div class="icon-emoji">🖥️</div>
+            <div class="icon-label">This Mac</div>
+        </button>
+        <button class="icon" type="button" data-app="AirDrop">
+            <div class="icon-emoji">💾</div>
+            <div class="icon-label">AirDrop</div>
+        </button>
+        <button class="icon" type="button" data-app="Kosz">
+            <div class="icon-emoji">🗑️</div>
+            <div class="icon-label">Kosz</div>
+        </button>
+    </div>
+
+    <div id="window-layer" aria-live="polite"></div>
+
+    <!-- Dock -->
+    <div class="dock-container">
+        <div class="dock">
+            <button class="dock-item finder" type="button" data-app="Finder" title="Finder" aria-label="Otwórz Finder">😊</button>
+            <button class="dock-item safari" type="button" data-app="Safari" title="Safari" aria-label="Otwórz Safari">🧭</button>
+            <button class="dock-item messages" type="button" data-app="Wiadomości" title="Wiadomości" aria-label="Otwórz Wiadomości">💬</button>
+            <button class="dock-item photos" type="button" data-app="Zdjęcia" title="Zdjęcia" aria-label="Otwórz Zdjęcia">🌈</button>
+            <button class="dock-item music" type="button" data-app="Muzyka" title="Muzyka" aria-label="Otwórz Muzykę">🎵</button>
+            <button class="dock-item settings" type="button" data-app="Ustawienia" title="Ustawienia" aria-label="Otwórz Ustawienia">⚙️</button>
+            <button class="dock-item" type="button" data-app="Notatki" title="Notatki" aria-label="Otwórz Notatki">📝</button>
+            <button class="dock-item" type="button" data-app="Kalkulator" title="Kalkulator" aria-label="Otwórz Kalkulator">🧮</button>
+            <button class="dock-item" type="button" data-app="Menedżer zadań" title="Menedżer zadań" aria-label="Otwórz Menedżer zadań">📊</button>
+            <button class="dock-item" type="button" data-app="Launchpad" title="Launchpad" aria-label="Otwórz Launchpad">🚀</button>
+        </div>
+    </div>
+    <div class="dock-context-menu" id="dock-context-menu" role="menu" aria-label="Ustawienia Docka" hidden></div>
+
+    <script>
+        // Clock functionality
+        function updateClock() {
+            const now = new Date();
+            const options = { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            };
+            document.getElementById('clock').textContent = 
+                now.toLocaleString('pl-PL', options);
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        const storageKey = 'macos-catalina-state-v1';
+
+        function loadSavedState() {
+            try {
+                const rawState = localStorage.getItem(storageKey);
+                if (!rawState) return {};
+                const parsed = JSON.parse(rawState);
+                return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+            } catch (error) {
+                console.error('Nie udało się odczytać ustawień z localStorage.', error);
+                return {};
+            }
+        }
+
+        const savedState = loadSavedState();
+        const savedPreferences = savedState.preferences && typeof savedState.preferences === 'object'
+            ? savedState.preferences : {};
+        const themes = {
+            catalina: { name: 'Catalina', start: '#667eea', end: '#764ba2', accent: '#3478f6' },
+            ocean: { name: 'Ocean', start: '#0ea5e9', end: '#1e3a8a', accent: '#06b6d4' },
+            sunset: { name: 'Zachód słońca', start: '#f97316', end: '#9d174d', accent: '#e11d48' },
+            graphite: { name: 'Grafit', start: '#475569', end: '#111827', accent: '#a78bfa' },
+            forest: { name: 'Las', start: '#2d6a4f', end: '#081c15', accent: '#74c69d' }
+        };
+        const clamp = (value, min, max, fallback) =>
+            Number.isFinite(Number(value)) ? Math.min(max, Math.max(min, Number(value))) : fallback;
+        const savedTheme = typeof savedPreferences.theme === 'string' && themes[savedPreferences.theme]
+            ? savedPreferences.theme : 'catalina';
+        const accentColor = typeof savedPreferences.accentColor === 'string' &&
+            /^#[0-9a-f]{6}$/i.test(savedPreferences.accentColor)
+            ? savedPreferences.accentColor : themes[savedTheme].accent;
+        const preferenceValues = {
+            theme: savedTheme,
+            glassEnabled: savedPreferences.glassEnabled !== false,
+            opacity: clamp(savedPreferences.opacity, 20, 95, 72),
+            blur: clamp(savedPreferences.blur, 0, 40, 32),
+            saturation: clamp(savedPreferences.saturation, 100, 250, 180),
+            menuOpacity: clamp(savedPreferences.menuOpacity, 0, 100, 90),
+            accentColor,
+            reduceMotion: savedPreferences.reduceMotion === true,
+            iconPack: ['emoji', 'pastel', 'minimal'].includes(savedPreferences.iconPack)
+                ? savedPreferences.iconPack : 'emoji',
+            dockSize: clamp(savedPreferences.dockSize, 36, 72, 50),
+            dockMagnification: clamp(savedPreferences.dockMagnification, 1, 1.6, 1.15),
+            dockAutoHide: savedPreferences.dockAutoHide === true,
+            minimizeAnimations: savedPreferences.minimizeAnimations !== false
+        };
+        document.body.classList.toggle('no-glass', !preferenceValues.glassEnabled);
+        document.body.classList.toggle('reduce-motion', preferenceValues.reduceMotion);
+        document.body.style.setProperty('--glass-opacity', preferenceValues.opacity / 100);
+        document.body.style.setProperty('--glass-secondary-opacity', preferenceValues.opacity / 100 * 0.58);
+        document.body.style.setProperty('--glass-blur', `${preferenceValues.blur}px`);
+        document.body.style.setProperty('--glass-saturation', preferenceValues.saturation / 100);
+        document.body.style.setProperty('--menu-opacity', preferenceValues.menuOpacity / 100);
+        document.body.classList.toggle('menu-transparent', preferenceValues.menuOpacity === 0);
+        document.body.style.setProperty('--dock-icon-size', `${preferenceValues.dockSize}px`);
+        document.body.style.setProperty('--dock-magnification', preferenceValues.dockMagnification);
+        document.body.classList.toggle('dock-hidden', preferenceValues.dockAutoHide);
+        document.body.style.setProperty('--accent-color', preferenceValues.accentColor);
+        document.body.style.setProperty('--desktop-start', themes[preferenceValues.theme].start);
+        document.body.style.setProperty('--desktop-end', themes[preferenceValues.theme].end);
+        preferenceValues.batteryLevel = clamp(savedPreferences.batteryLevel, 0, 100, 100);
+        preferenceValues.lowPowerMode = savedPreferences.lowPowerMode === true;
+        preferenceValues.volume = clamp(savedPreferences.volume, 0, 100, 70);
+        preferenceValues.notificationsEnabled = savedPreferences.notificationsEnabled !== false;
+
+        savedState.wifiEnabled = savedState.wifiEnabled !== false;
+        savedState.bluetoothEnabled = savedState.bluetoothEnabled !== false;
+        savedState.note = typeof savedState.note === 'string' ? savedState.note : '';
+        savedState.messages = Array.isArray(savedState.messages)
+            ? savedState.messages.filter(message => typeof message === 'string').slice(-100) : [];
+
+        function persistState() {
+            savedState.preferences = { ...preferenceValues };
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(savedState));
+            } catch (error) {
+                console.error('Nie udało się zapisać ustawień w localStorage.', error);
+            }
+        }
+
+        function applyTheme(themeKey) {
+            const theme = themes[themeKey];
+            if (!theme) return;
+            preferenceValues.theme = themeKey;
+            preferenceValues.accentColor = theme.accent;
+            document.body.style.setProperty('--desktop-start', theme.start);
+            document.body.style.setProperty('--desktop-end', theme.end);
+            document.body.style.setProperty('--accent-color', theme.accent);
+            windowLayer.querySelectorAll('[data-setting="accent"]').forEach(input => {
+                input.value = theme.accent;
+            });
+            windowLayer.querySelectorAll('[data-theme]').forEach(button => {
+                button.setAttribute('aria-pressed', String(button.dataset.theme === themeKey));
+            });
+            persistState();
+        }
+
+        function openSettingsCategory(category) {
+            openApp('Ustawienia');
+            const settingsWindow = getActiveWindow();
+            if (!settingsWindow) return;
+            settingsWindow.querySelectorAll('[data-settings-category]').forEach(button => {
+                button.setAttribute('aria-pressed', String(button.dataset.settingsCategory === category));
+            });
+            settingsWindow.querySelectorAll('[data-settings-panel]').forEach(panel => {
+                panel.hidden = panel.dataset.settingsPanel !== category;
+            });
+        }
+
+        function updateWifiUI() {
+            const wifiLabel = document.querySelector('[data-wifi-label]');
+            const wifiStatus = document.querySelector('[data-wifi-status]');
+            const wifiAction = document.querySelector('[data-menu-action="wifi"]');
+            if (wifiLabel) wifiLabel.textContent = savedState.wifiEnabled ? 'Wi-Fi' : 'Wyłączono';
+            if (wifiStatus) wifiStatus.textContent = savedState.wifiEnabled
+                ? 'Połączono z siecią Wi-Fi.' : 'Wi-Fi jest wyłączone.';
+            if (wifiAction) wifiAction.textContent = savedState.wifiEnabled ? 'Wyłącz Wi-Fi' : 'Włącz Wi-Fi';
+            windowLayer?.querySelectorAll('[data-setting="wifi"]').forEach(input => {
+                input.checked = savedState.wifiEnabled;
+            });
+        }
+
+        function updateSystemIndicators() {
+            const bluetoothIcon = document.querySelector('[data-bluetooth-icon]');
+            const bluetoothLabel = document.querySelector('[data-bluetooth-label]');
+            if (bluetoothIcon) bluetoothIcon.textContent = savedState.bluetoothEnabled ? '🔵' : '⚪';
+            if (bluetoothLabel) bluetoothLabel.textContent = savedState.bluetoothEnabled ? 'Bluetooth' : 'Wył. Bluetooth';
+
+            const batteryIcon = document.querySelector('[data-battery-icon]');
+            const batteryLevel = document.querySelector('[data-battery-level]');
+            const batteryStatus = document.querySelector('[data-battery-status]');
+            if (batteryIcon) batteryIcon.textContent = preferenceValues.batteryLevel <= 20 ? '🪫' : '🔋';
+            if (batteryLevel) batteryLevel.textContent = `${preferenceValues.batteryLevel}%`;
+            if (batteryStatus) batteryStatus.textContent = preferenceValues.lowPowerMode
+                ? `Tryb niskiego zużycia energii · ${preferenceValues.batteryLevel}%`
+                : `Poziom baterii: ${preferenceValues.batteryLevel}%`;
+            windowLayer?.querySelectorAll('[data-battery-settings-status]').forEach(status => {
+                status.textContent = preferenceValues.lowPowerMode ? 'Tryb niskiego zużycia energii jest włączony.' : '';
+            });
+
+            const volumeIcon = document.querySelector('[data-volume-icon]');
+            if (volumeIcon) volumeIcon.textContent = preferenceValues.volume === 0 ? '🔇' :
+                preferenceValues.volume < 35 ? '🔈' : '🔊';
+            windowLayer?.querySelectorAll('[data-sound-status]').forEach(status => {
+                status.textContent = preferenceValues.volume === 0 ? 'Dźwięk jest wyciszony.' : `Głośność: ${preferenceValues.volume}%.`;
+            });
+            windowLayer?.querySelectorAll('[data-setting="low-power"]').forEach(input => {
+                input.checked = preferenceValues.lowPowerMode;
+            });
+            windowLayer?.querySelectorAll('[data-setting="notifications"]').forEach(input => {
+                input.checked = preferenceValues.notificationsEnabled;
+            });
+            windowLayer?.querySelectorAll('[data-value="battery-level"]').forEach(output => {
+                output.value = `${preferenceValues.batteryLevel}%`;
+                output.textContent = output.value;
+            });
+            windowLayer?.querySelectorAll('[data-value="volume"]').forEach(output => {
+                output.value = `${preferenceValues.volume}%`;
+                output.textContent = output.value;
+            });
+            windowLayer?.querySelectorAll('[data-notifications-status]').forEach(status => {
+                status.textContent = preferenceValues.notificationsEnabled
+                    ? 'Powiadomienia są dozwolone.' : 'Powiadomienia są wyłączone.';
+            });
+        }
+
+        const windowLayer = document.getElementById('window-layer');
+        updateWifiUI();
+        updateSystemIndicators();
+        const systemScreen = document.getElementById('system-screen');
+        const setupScreen = document.getElementById('setup-screen');
+        const loginScreen = document.getElementById('login-screen');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingMessage = document.getElementById('loading-message');
+        const setupError = setupScreen.querySelector('[data-setup-error]');
+        const loginError = loginScreen.querySelector('[data-login-error]');
+        const passwordInput = loginScreen.querySelector('#login-password');
+        let isReconfiguration = false;
+        let systemTransitionTimer = null;
+        let nextZIndex = 10;
+        let openedWindows = 0;
+        const launchpadApps = [
+            { name: 'Finder', icon: '😊', pastel: '🗂️', minimal: '⌂' },
+            { name: 'Safari', icon: '🧭', pastel: '🌐', minimal: '◎' },
+            { name: 'Wiadomości', icon: '💬', pastel: '🫧', minimal: '✉' },
+            { name: 'Mail', icon: '✉️', pastel: '💌', minimal: '✉' },
+            { name: 'Mapy', icon: '🗺️', pastel: '📍', minimal: '⌖' },
+            { name: 'Zdjęcia', icon: '🌈', pastel: '🌅', minimal: '▧' },
+            { name: 'FaceTime', icon: '📹', pastel: '📞', minimal: '◉' },
+            { name: 'Kalendarz', icon: '📅', pastel: '🗓️', minimal: '▦' },
+            { name: 'Kontakty', icon: '👥', pastel: '🧑‍🤝‍🧑', minimal: '♙' },
+            { name: 'Przypomnienia', icon: '✅', pastel: '📝', minimal: '☷' },
+            { name: 'Notatki', icon: '📝', pastel: '📒', minimal: '▤' },
+            { name: 'Muzyka', icon: '🎵', pastel: '🎧', minimal: '♫' },
+            { name: 'Podcasty', icon: '🎙️', pastel: '🎧', minimal: '◉' },
+            { name: 'App Store', icon: '🛍️', pastel: '🎨', minimal: '✣' },
+            { name: 'Word', icon: '📘', pastel: '📝', minimal: 'W' },
+            { name: 'Excel', icon: '📗', pastel: '📊', minimal: 'X' },
+            { name: 'Office', icon: '🧩', pastel: '💼', minimal: '▦' },
+            { name: 'Ustawienia', icon: '⚙️', pastel: '🔧', minimal: '⚙' }
+        ];
+        const defaultPinnedApps = [
+            'Finder', 'Safari', 'Wiadomości', 'Mail', 'Mapy', 'Zdjęcia', 'FaceTime',
+            'Kalendarz', 'Kontakty', 'Przypomnienia', 'Notatki', 'Muzyka', 'Podcasty',
+            'App Store', 'Word', 'Excel', 'Office', 'Kalkulator', 'Menedżer zadań',
+            'Ustawienia', 'Launchpad'
+        ];
+        const pinnedApps = Array.isArray(savedState.pinnedApps)
+            ? [...new Set(savedState.pinnedApps.filter(name => defaultPinnedApps.includes(name)))]
+            : [...defaultPinnedApps];
+        savedState.pinnedApps = pinnedApps;
+        function getAppIcon(name) {
+            const app = launchpadApps.find(item => item.name === name);
+            if (app) return app[preferenceValues.iconPack] || app.icon;
+            const fallback = {
+                'This Mac': ['🖥️', '💻', '▣'],
+                AirDrop: ['💾', '📨', '↗'],
+                Kosz: ['🗑️', '🧺', '⌫'],
+                Kalkulator: ['🧮', '🔢', '＋'],
+                'Menedżer zadań': ['📊', '📈', '▥'],
+                Launchpad: ['🚀', '🌟', '✦']
+            }[name] || ['📦', '🧸', '◇'];
+            return fallback[['emoji', 'pastel', 'minimal'].indexOf(preferenceValues.iconPack)];
+        }
+        function renderLaunchpad() {
+            return `<div class="launchpad-grid">${launchpadApps.map(app =>
+                `<button class="launchpad-app" type="button" data-launch-app="${app.name}"><span class="launchpad-icon" data-icon-for="${app.name}">${getAppIcon(app.name)}</span><span>${app.name}</span></button>`
+            ).join('')}</div>`;
+        }
+        const appViews = {
+            Launchpad: renderLaunchpad(),
+            'This Mac': '<p>Informacje o urządzeniu</p><div class="file-list"><div class="file-tile">💻<br>macOS Catalina</div><div class="file-tile">⚙️<br>Procesor Apple</div><div class="file-tile">💾<br>Pamięć dostępna</div></div>',
+            AirDrop: '<p>Wybierz urządzenie, aby rozpocząć udostępnianie.</p><div class="file-list"><button class="app-button" data-action="airdrop">📱 iPhone Ani</button><button class="app-button" data-action="airdrop">💻 MacBook</button></div><div class="app-status" aria-live="polite"></div>',
+            Kosz: '<p>Elementy przeniesione do Kosza.</p><div class="file-list"><div class="file-tile">📄<br>Projekt.txt</div><div class="file-tile">🖼️<br>Zdjęcie.png</div></div><button class="app-button" data-action="empty-trash">Opróżnij Kosz</button><div class="app-status" aria-live="polite"></div>',
+            Finder: '<p>Ulubione</p><div class="file-list"><button class="app-button" data-action="folder">📁 Pulpit</button><button class="app-button" data-action="folder">📁 Dokumenty</button><button class="app-button" data-action="folder">📁 Pobrane</button><button class="app-button" data-action="folder">🖼️ Obrazy</button></div><div class="app-status" aria-live="polite">Wybierz folder, aby go otworzyć.</div>',
+            Safari: '<form data-form="search"><input name="query" placeholder="Wyszukaj lub wpisz adres" aria-label="Wyszukaj lub wpisz adres"><button class="app-button" type="submit">Przejdź</button></form><div class="app-panel" style="margin-top:12px"><strong>Strona startowa</strong><p>Twoje ulubione strony pojawią się tutaj.</p></div><div class="app-status" aria-live="polite"></div>',
+            Wiadomości: '<div class="app-panel"><p>💬 Cześć! Co słychać?</p><p style="text-align:right">Wszystko dobrze, dzięki! 👋</p><div data-messages></div></div><form data-form="message" style="display:flex;gap:8px;margin-top:12px"><input name="message" placeholder="Napisz wiadomość…" aria-label="Napisz wiadomość"><button class="app-button" type="submit">Wyślij</button></form>',
+            Zdjęcia: '<p>Ostatnie wspomnienia</p><div class="file-list"><div class="file-tile">🏖️<br>Wakacje</div><div class="file-tile">🐈<br>Pupil</div><div class="file-tile">🌅<br>Zachód słońca</div><div class="file-tile">🎂<br>Urodziny</div></div>',
+            Muzyka: '<div class="app-panel"><div style="font-size:54px;text-align:center">🎵</div><p style="text-align:center"><strong>Liquid Dreams</strong><br>Glass Waves</p><div style="display:flex;justify-content:center;gap:10px"><button class="app-button" data-action="previous" aria-label="Poprzedni utwór">⏮</button><button class="app-button" data-action="play" aria-label="Odtwórz">▶️</button><button class="app-button" data-action="next" aria-label="Następny utwór">⏭</button></div><div class="app-status" aria-live="polite" style="text-align:center">Gotowy do odtwarzania</div></div>',
+            Mail: '<p>Skrzynka odbiorcza</p><div class="file-list"><div class="file-tile">✉️<br>Witaj w Mail</div><div class="file-tile">📥<br>Odebrane</div><div class="file-tile">📤<br>Wysłane</div></div>',
+            Mapy: '<p>Twoje miejsca</p><div class="file-list"><div class="file-tile">📍<br>Dom</div><div class="file-tile">🏙️<br>Centrum</div><div class="file-tile">☕<br>Ulubiona kawiarnia</div></div>',
+            FaceTime: '<div class="app-panel"><div style="font-size:54px;text-align:center">📹</div><p style="text-align:center">Rozpocznij połączenie FaceTime</p><button class="app-button" type="button">Nowe połączenie</button></div>',
+            Kalendarz: '<p>Najbliższe wydarzenia</p><div class="file-list"><div class="file-tile">📅<br>Dzisiaj<br>Brak wydarzeń</div><div class="file-tile">🎂<br>Urodziny</div></div>',
+            Kontakty: '<p>Ulubione kontakty</p><div class="file-list"><div class="file-tile">👤<br>Aleksandra</div><div class="file-tile">👤<br>Jan</div></div>',
+            Przypomnienia: '<p>Moje listy</p><div class="file-list"><div class="file-tile">✅<br>Dzisiaj</div><div class="file-tile">🛒<br>Zakupy</div></div>',
+            Podcasty: '<p>Odkrywaj podcasty</p><div class="file-list"><div class="file-tile">🎙️<br>Technologia</div><div class="file-tile">🎧<br>Historie</div></div>',
+            'App Store': '<p>Odkrywaj aplikacje</p><div class="file-list"><div class="file-tile">🎨<br>Grafika</div><div class="file-tile">🎮<br>Gry</div><div class="file-tile">📚<br>Produktywność</div></div>',
+            Word: '<p>Dokument tekstowy</p><textarea data-office-doc="word" aria-label="Dokument Word" placeholder="Zacznij pisać dokument…"></textarea><div class="app-status" data-office-status aria-live="polite">Zmiany są zapisywane lokalnie.</div>',
+            Excel: '<p>Arkusz kalkulacyjny</p><div class="office-sheet" role="grid" aria-label="Arkusz Excel"></div><div class="app-status" data-office-status aria-live="polite">Wybierz komórkę, aby edytować. Zmiany zapisują się lokalnie.</div>',
+            Office: '<p>Pakiet biurowy</p><div class="file-list"><button class="app-button" type="button" data-launch-app="Word">📘 Word — dokumenty</button><button class="app-button" type="button" data-launch-app="Excel">📗 Excel — arkusze</button></div><p>Dokumenty są przechowywane lokalnie w tej przeglądarce.</p>',
+            Ustawienia: '<div class="settings-layout"><nav class="settings-sidebar" aria-label="Kategorie ustawień"><button class="settings-category" type="button" data-settings-category="appearance" aria-pressed="true">Wygląd</button><button class="settings-category" type="button" data-settings-category="apps" aria-pressed="false">Aplikacje</button><button class="settings-category" type="button" data-settings-category="themes" aria-pressed="false">Motywy</button></nav><div class="settings-content"><section class="settings-panel" data-settings-panel="appearance"><h2>Wygląd</h2><p>Dostosuj Liquid Glass, kolory i animacje.</p><label><input type="checkbox" data-setting="glass" checked> Efekt Liquid Glass</label><label class="glass-control" for="glass-opacity">Przezroczystość szkła <output data-value="opacity"></output><input id="glass-opacity" type="range" min="20" max="95" value="72" data-setting="opacity" aria-label="Przezroczystość szkła"></label><label class="glass-control" for="glass-blur">Rozmycie szkła <output data-value="blur"></output><input id="glass-blur" type="range" min="0" max="40" value="32" data-setting="blur" aria-label="Rozmycie szkła"></label><label class="glass-control" for="glass-saturation">Nasycenie szkła <output data-value="saturation"></output><input id="glass-saturation" type="range" min="100" max="250" value="180" data-setting="saturation" aria-label="Nasycenie szkła"></label><label class="glass-control" for="menu-opacity">Przezroczystość górnego paska <output data-value="menu-opacity"></output><input id="menu-opacity" type="range" min="20" max="100" value="90" data-setting="menu-opacity" aria-label="Przezroczystość górnego paska"></label><label class="accent-control" for="accent-color">Kolor akcentu <input id="accent-color" type="color" value="#3478f6" data-setting="accent" aria-label="Kolor akcentu"></label><br><label><input type="checkbox" data-setting="reduce-motion"> Ogranicz animacje</label></section><section class="settings-panel" data-settings-panel="apps" hidden><h2>Aplikacje</h2><p>Otwórz aplikację z pulpitu.</p><div class="app-settings-list"><div class="app-settings-row"><span class="app-settings-icon">😊</span><span class="app-settings-name">Finder</span><button class="app-button" type="button" data-settings-app="Finder">Otwórz</button></div><div class="app-settings-row"><span class="app-settings-icon">🧭</span><span class="app-settings-name">Safari</span><button class="app-button" type="button" data-settings-app="Safari">Otwórz</button></div><div class="app-settings-row"><span class="app-settings-icon">💬</span><span class="app-settings-name">Wiadomości</span><button class="app-button" type="button" data-settings-app="Wiadomości">Otwórz</button></div><div class="app-settings-row"><span class="app-settings-icon">📝</span><span class="app-settings-name">Notatki</span><button class="app-button" type="button" data-settings-app="Notatki">Otwórz</button></div><div class="app-settings-row"><span class="app-settings-icon">🧮</span><span class="app-settings-name">Kalkulator</span><button class="app-button" type="button" data-settings-app="Kalkulator">Otwórz</button></div><div class="app-settings-row"><span class="app-settings-icon">📊</span><span class="app-settings-name">Menedżer zadań</span><button class="app-button" type="button" data-settings-app="Menedżer zadań">Otwórz</button></div></div></section><section class="settings-panel" data-settings-panel="themes" hidden><h2>Motywy</h2><p>Wybierz kolor pulpitu i akcent aplikacji.</p><div class="theme-grid"><button class="theme-card" type="button" data-theme="catalina" aria-pressed="true"><span class="theme-preview" style="background:linear-gradient(135deg,#667eea,#764ba2)"><span></span><span></span></span><span>Catalina</span></button><button class="theme-card" type="button" data-theme="ocean" aria-pressed="false"><span class="theme-preview" style="background:linear-gradient(135deg,#0ea5e9,#1e3a8a)"><span></span><span></span></span><span>Ocean</span></button><button class="theme-card" type="button" data-theme="sunset" aria-pressed="false"><span class="theme-preview" style="background:linear-gradient(135deg,#f97316,#9d174d)"><span></span><span></span></span><span>Zachód słońca</span></button><button class="theme-card" type="button" data-theme="graphite" aria-pressed="false"><span class="theme-preview" style="background:linear-gradient(135deg,#475569,#111827)"><span></span><span></span></span><span>Grafit</span></button></div></section></div></div>',
+            Notatki: '<p>Nowa notatka</p><textarea data-note data-setting="note" placeholder="Zacznij pisać…"></textarea><div class="app-status" aria-live="polite">Notatka zapisywana w tym oknie.</div>',
+            Kalkulator: '<div class="calc-display" data-display aria-live="polite">0</div><div class="calc-grid">' + ['7','8','9','÷','4','5','6','×','1','2','3','−','C','0','=','+'].map(key => `<button class="calc-key" data-key="${key}" type="button">${key}</button>`).join('') + '</div>',
+            'Menedżer zadań': '<p>Otwarte aplikacje i okna</p><button class="app-button" type="button" data-manager-action="close-all">Zamknij wszystkie okna</button><div class="task-list" data-task-list></div><div class="app-status" aria-live="polite"></div>',
+            Pomoc: '<p>Wskazówki</p><div class="file-list"><div class="file-tile">⌘W<br>Zamknij okno</div><div class="file-tile">⌥⌘W<br>Zamknij wszystkie</div><div class="file-tile">⌥⌘Esc<br>Menedżer zadań</div></div>'
+        };
+        appViews.Ustawienia = `<div class="settings-layout">
+            <nav class="settings-sidebar" aria-label="Kategorie ustawień">
+                <button class="settings-category" type="button" data-settings-category="appearance" aria-pressed="true">Wygląd</button>
+                <button class="settings-category" type="button" data-settings-category="dock" aria-pressed="false">Dock</button>
+                <button class="settings-category" type="button" data-settings-category="network" aria-pressed="false">Sieć i Bluetooth</button>
+                <button class="settings-category" type="button" data-settings-category="battery" aria-pressed="false">Bateria</button>
+                <button class="settings-category" type="button" data-settings-category="sound" aria-pressed="false">Dźwięk</button>
+                <button class="settings-category" type="button" data-settings-category="notifications" aria-pressed="false">Powiadomienia</button>
+                <button class="settings-category" type="button" data-settings-category="apps" aria-pressed="false">Aplikacje</button>
+                <button class="settings-category" type="button" data-settings-category="themes" aria-pressed="false">Motywy</button>
+            </nav>
+            <div class="settings-content">
+                <section class="settings-panel" data-settings-panel="appearance">
+                    <h2>Wygląd</h2><p>Dostosuj Liquid Glass, kolory i animacje.</p>
+                    <label><input type="checkbox" data-setting="glass" checked> Efekt Liquid Glass</label>
+                    <label class="glass-control" for="glass-opacity">Przezroczystość szkła <output data-value="opacity"></output><input id="glass-opacity" type="range" min="20" max="95" value="72" data-setting="opacity" aria-label="Przezroczystość szkła"></label>
+                    <label class="glass-control" for="glass-blur">Rozmycie szkła <output data-value="blur"></output><input id="glass-blur" type="range" min="0" max="40" value="32" data-setting="blur" aria-label="Rozmycie szkła"></label>
+                    <label class="glass-control" for="glass-saturation">Nasycenie szkła <output data-value="saturation"></output><input id="glass-saturation" type="range" min="100" max="250" value="180" data-setting="saturation" aria-label="Nasycenie szkła"></label>
+                    <label class="glass-control" for="menu-opacity">Przezroczystość górnego paska <output data-value="menu-opacity"></output><input id="menu-opacity" type="range" min="0" max="100" value="90" data-setting="menu-opacity" aria-label="Przezroczystość górnego paska"></label>
+                    <label class="accent-control" for="accent-color">Kolor akcentu <input id="accent-color" type="color" value="#3478f6" data-setting="accent" aria-label="Kolor akcentu"></label>
+                    <label class="icon-pack-control" for="icon-pack">Paczka ikon
+                        <select id="icon-pack" data-setting="icon-pack" aria-label="Paczka ikon">
+                            <option value="emoji">Kolorowe emoji</option>
+                            <option value="pastel">Pastelowe</option>
+                            <option value="minimal">Minimalistyczne</option>
+                        </select>
+                    </label>
+                    <br><label><input type="checkbox" data-setting="reduce-motion"> Ogranicz animacje</label>
+                </section>
+                <section class="settings-panel" data-settings-panel="dock" hidden>
+                    <h2>Dock</h2><p>Dostosuj pasek aplikacji i zarządzaj przypiętymi ikonami.</p>
+                    <div class="dock-settings-controls">
+                        <label class="glass-control" for="dock-size">Rozmiar ikon <output data-value="dock-size"></output>
+                            <input id="dock-size" type="range" min="36" max="72" value="50" data-setting="dock-size" aria-label="Rozmiar ikon Docka">
+                        </label>
+                        <label class="glass-control" for="dock-magnification">Powiększenie ikon <output data-value="dock-magnification"></output>
+                            <input id="dock-magnification" type="range" min="100" max="160" value="115" data-setting="dock-magnification" aria-label="Powiększenie ikon Docka">
+                        </label>
+                        <label class="settings-row"><span>Ukrywaj Dock automatycznie</span><input type="checkbox" data-setting="dock-auto-hide"></label>
+                        <label class="settings-row"><span>Animuj minimalizowanie okien</span><input type="checkbox" data-setting="minimize-animations" checked></label>
+                    </div>
+                    <h3 style="margin-top:16px">Przypięte aplikacje</h3>
+                    <div class="app-settings-list" data-dock-app-list></div>
+                </section>
+                <section class="settings-panel" data-settings-panel="network" hidden>
+                    <h2>Sieć i Bluetooth</h2><p>Zarządzaj połączeniami bezprzewodowymi.</p>
+                    <div class="settings-section">
+                        <label class="settings-row"><span>Wi-Fi</span><input type="checkbox" data-setting="wifi"></label>
+                        <label class="settings-row"><span>Bluetooth</span><input type="checkbox" data-setting="bluetooth"></label>
+                    </div>
+                </section>
+                <section class="settings-panel" data-settings-panel="battery" hidden>
+                    <h2>Bateria</h2><p>Ustawienia zasilania i oszczędzania energii.</p>
+                    <div class="settings-section">
+                        <label class="settings-row"><span>Poziom baterii (symulacja)</span><output data-value="battery-level"></output></label>
+                        <input id="battery-level" type="range" min="0" max="100" value="100" data-setting="battery-level" aria-label="Poziom baterii">
+                        <label class="settings-row"><span>Tryb niskiego zużycia energii</span><input type="checkbox" data-setting="low-power"></label>
+                        <div class="app-status" data-battery-settings-status aria-live="polite"></div>
+                    </div>
+                </section>
+                <section class="settings-panel" data-settings-panel="sound" hidden>
+                    <h2>Dźwięk</h2><p>Ustaw głośność systemu.</p>
+                    <div class="settings-section">
+                        <label class="glass-control" for="sound-volume">Głośność <output data-value="volume"></output><input id="sound-volume" type="range" min="0" max="100" value="70" data-setting="volume" aria-label="Głośność"></label>
+                        <div class="app-status" data-sound-status aria-live="polite"></div>
+                    </div>
+                </section>
+                <section class="settings-panel" data-settings-panel="notifications" hidden>
+                    <h2>Powiadomienia</h2><p>Wybierz, czy aplikacje mogą pokazywać powiadomienia.</p>
+                    <div class="settings-section">
+                        <label class="settings-row"><span>Zezwalaj na powiadomienia</span><input type="checkbox" data-setting="notifications" checked></label>
+                        <div class="app-status" data-notifications-status aria-live="polite"></div>
+                    </div>
+                </section>
+                <section class="settings-panel" data-settings-panel="apps" hidden>
+                    <h2>Aplikacje</h2><p>Otwórz aplikację z pulpitu.</p>
+                    <div class="app-settings-list">
+                        <div class="app-settings-row"><span class="app-settings-icon">😊</span><span class="app-settings-name">Finder</span><button class="app-button" type="button" data-settings-app="Finder">Otwórz</button></div>
+                        <div class="app-settings-row"><span class="app-settings-icon">🧭</span><span class="app-settings-name">Safari</span><button class="app-button" type="button" data-settings-app="Safari">Otwórz</button></div>
+                        <div class="app-settings-row"><span class="app-settings-icon">💬</span><span class="app-settings-name">Wiadomości</span><button class="app-button" type="button" data-settings-app="Wiadomości">Otwórz</button></div>
+                        <div class="app-settings-row"><span class="app-settings-icon">📝</span><span class="app-settings-name">Notatki</span><button class="app-button" type="button" data-settings-app="Notatki">Otwórz</button></div>
+                        <div class="app-settings-row"><span class="app-settings-icon">🧮</span><span class="app-settings-name">Kalkulator</span><button class="app-button" type="button" data-settings-app="Kalkulator">Otwórz</button></div>
+                        <div class="app-settings-row"><span class="app-settings-icon">📊</span><span class="app-settings-name">Menedżer zadań</span><button class="app-button" type="button" data-settings-app="Menedżer zadań">Otwórz</button></div>
+                    </div>
+                </section>
+                <section class="settings-panel" data-settings-panel="themes" hidden>
+                    <h2>Motywy</h2><p>Wybierz kolor pulpitu i akcent aplikacji.</p>
+                    <div class="theme-grid">
+                        <button class="theme-card" type="button" data-theme="catalina" aria-pressed="true"><span class="theme-preview" style="background:linear-gradient(135deg,#667eea,#764ba2)"><span></span><span></span></span><span>Catalina</span></button>
+                        <button class="theme-card" type="button" data-theme="ocean" aria-pressed="false"><span class="theme-preview" style="background:linear-gradient(135deg,#0ea5e9,#1e3a8a)"><span></span><span></span></span><span>Ocean</span></button>
+                        <button class="theme-card" type="button" data-theme="sunset" aria-pressed="false"><span class="theme-preview" style="background:linear-gradient(135deg,#f97316,#9d174d)"><span></span><span></span></span><span>Zachód słońca</span></button>
+                        <button class="theme-card" type="button" data-theme="graphite" aria-pressed="false"><span class="theme-preview" style="background:linear-gradient(135deg,#475569,#111827)"><span></span><span></span></span><span>Grafit</span></button>
+                        <button class="theme-card" type="button" data-theme="forest" aria-pressed="false"><span class="theme-preview" style="background:linear-gradient(135deg,#2d6a4f,#081c15)"><span></span><span></span></span><span>Las</span></button>
+                    </div>
+                </section>
+            </div>
+        </div>`;
+        const appDescriptions = {
+            'This Mac': 'Ten Mac', AirDrop: 'AirDrop', Kosz: 'Kosz', Finder: 'Finder',
+            Safari: 'Safari', Wiadomości: 'Wiadomości', Zdjęcia: 'Zdjęcia',
+            Muzyka: 'Muzyka', Ustawienia: 'Ustawienia', Notatki: 'Notatki', Kalkulator: 'Kalkulator',
+            'Menedżer zadań': 'Menedżer zadań', Pomoc: 'Pomoc macOS', Launchpad: 'Launchpad',
+            Mail: 'Mail', Mapy: 'Mapy', FaceTime: 'FaceTime', Kalendarz: 'Kalendarz',
+            Kontakty: 'Kontakty', Przypomnienia: 'Przypomnienia', Podcasty: 'Podcasty',
+            'App Store': 'App Store', Word: 'Microsoft Word', Excel: 'Microsoft Excel',
+            Office: 'Microsoft Office'
+        };
+
+        const dockContainer = document.querySelector('.dock-container');
+        const dock = dockContainer.querySelector('.dock');
+        const dockContextMenu = document.getElementById('dock-context-menu');
+        savedState.officeDocs = savedState.officeDocs && typeof savedState.officeDocs === 'object'
+            ? savedState.officeDocs : {};
+
+        function renderDock() {
+            dock.replaceChildren();
+            pinnedApps.forEach(name => {
+                const button = document.createElement('button');
+                button.className = `dock-item${name === 'Finder' ? ' finder' : ''}${name === 'Safari' ? ' safari' : ''}${name === 'Wiadomości' ? ' messages' : ''}${name === 'Zdjęcia' ? ' photos' : ''}${name === 'Muzyka' ? ' music' : ''}${name === 'Ustawienia' ? ' settings' : ''}`;
+                button.type = 'button';
+                button.dataset.app = name;
+                button.title = name;
+                button.setAttribute('aria-label', `Otwórz ${name}`);
+                button.textContent = getAppIcon(name);
+                button.setAttribute('aria-pressed', String([...windowLayer.querySelectorAll('.window')].some(appWindow =>
+                    appWindow.querySelector('.window-title')?.textContent === (appDescriptions[name] || name) &&
+                    !appWindow.classList.contains('is-minimized'))));
+                dock.appendChild(button);
+            });
+        }
+
+        function renderDockSettings() {
+            windowLayer.querySelectorAll('[data-dock-app-list]').forEach(list => {
+                list.replaceChildren();
+                defaultPinnedApps.forEach(name => {
+                    const row = document.createElement('div');
+                    row.className = 'app-settings-row';
+                    const icon = document.createElement('span');
+                    icon.className = 'app-settings-icon';
+                    icon.textContent = getAppIcon(name);
+                    const label = document.createElement('span');
+                    label.className = 'app-settings-name';
+                    label.textContent = name;
+                    const toggle = document.createElement('button');
+                    toggle.className = 'app-button';
+                    toggle.type = 'button';
+                    toggle.dataset.dockPin = name;
+                    toggle.textContent = pinnedApps.includes(name) ? 'Odepnij' : 'Przypnij';
+                    row.append(icon, label, toggle);
+                    list.appendChild(row);
+                });
+            });
+        }
+
+        function updateDockLayout() {
+            document.body.style.setProperty('--dock-icon-size', `${preferenceValues.dockSize}px`);
+            document.body.style.setProperty('--dock-magnification', preferenceValues.dockMagnification);
+            document.body.classList.toggle('dock-hidden', preferenceValues.dockAutoHide);
+            renderDock();
+        }
+
+        function applyIconPack() {
+            document.body.classList.toggle('icon-pack-minimal', preferenceValues.iconPack === 'minimal');
+            document.querySelectorAll('[data-app]').forEach(button => {
+                const icon = getAppIcon(button.dataset.app);
+                const iconElement = button.querySelector('.icon-emoji');
+                if (iconElement) iconElement.textContent = icon;
+                else if (button.classList.contains('dock-item')) button.textContent = icon;
+            });
+            windowLayer.querySelectorAll('[data-icon-for]').forEach(icon => {
+                icon.textContent = getAppIcon(icon.dataset.iconFor);
+            });
+            windowLayer.querySelectorAll('[data-settings-app]').forEach(button => {
+                const icon = button.parentElement.querySelector('.app-settings-icon');
+                if (icon) icon.textContent = getAppIcon(button.dataset.settingsApp);
+            });
+            windowLayer.querySelectorAll('[data-setting="icon-pack"]').forEach(select => {
+                select.value = preferenceValues.iconPack;
+            });
+            renderDock();
+            renderDockSettings();
+        }
+        applyIconPack();
+
+        function focusWindow(appWindow) {
+            const wasMinimized = appWindow.classList.contains('is-minimized');
+            appWindow.classList.remove('is-minimized', 'is-minimizing');
+            if (wasMinimized) {
+                if (appWindow.dataset.restoreLeft) appWindow.style.left = appWindow.dataset.restoreLeft;
+                if (appWindow.dataset.restoreTop) appWindow.style.top = appWindow.dataset.restoreTop;
+                if (appWindow.dataset.restoreWidth) appWindow.style.width = appWindow.dataset.restoreWidth;
+                appWindow.style.removeProperty('bottom');
+                delete appWindow.dataset.restoreLeft;
+                delete appWindow.dataset.restoreTop;
+                delete appWindow.dataset.restoreWidth;
+            }
+            if (wasMinimized && preferenceValues.minimizeAnimations && !preferenceValues.reduceMotion) {
+                appWindow.classList.add('is-restoring');
+                appWindow.addEventListener('animationend', event => {
+                    if (event.animationName === 'restore-window') appWindow.classList.remove('is-restoring');
+                }, { once: true });
+                window.setTimeout(() => appWindow.classList.remove('is-restoring'), 350);
+            }
+            appWindow.classList.remove('is-minimized');
+            nextZIndex += 1;
+            appWindow.style.zIndex = nextZIndex;
+            windowLayer.querySelectorAll('.window').forEach(window => window.classList.toggle('is-active', window === appWindow));
+            renderDock();
+            refreshWindowMenus();
+        }
+
+        function getActiveWindow() {
+            return windowLayer.querySelector('.window.is-active') ||
+                [...windowLayer.querySelectorAll('.window:not(.is-minimized)')].sort((a, b) =>
+                    Number(b.style.zIndex) - Number(a.style.zIndex))[0] || null;
+        }
+
+        function closeAllWindows() {
+            windowLayer.querySelectorAll('.window').forEach(appWindow => appWindow.remove());
+            refreshWindowMenus();
+        }
+
+        function encodeBase64(bytes) {
+            return btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(''));
+        }
+
+        async function derivePasswordHash(password, salt) {
+            if (!crypto.subtle) throw new Error('Ta przeglądarka nie obsługuje bezpiecznego szyfrowania hasła.');
+            const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+            const bits = await crypto.subtle.deriveBits({
+                name: 'PBKDF2',
+                salt,
+                iterations: 150000,
+                hash: 'SHA-256'
+            }, key, 256);
+            return new Uint8Array(bits);
+        }
+
+        function bytesMatch(left, right) {
+            if (left.length !== right.length) return false;
+            let difference = 0;
+            for (let index = 0; index < left.length; index += 1) difference |= left[index] ^ right[index];
+            return difference === 0;
+        }
+
+        function updateSetupPasswordFields(skipPassword) {
+            const passwordFields = [
+                setupScreen.querySelector('#setup-password'),
+                setupScreen.querySelector('#setup-password-confirm')
+            ];
+            passwordFields.forEach(input => {
+                input.disabled = skipPassword;
+                input.required = !skipPassword && !isReconfiguration;
+                if (skipPassword) input.value = '';
+            });
+        }
+
+        function showSetupScreen(reconfigure = false) {
+            window.clearTimeout(systemTransitionTimer);
+            isReconfiguration = reconfigure;
+            systemScreen.hidden = false;
+            setupScreen.hidden = false;
+            loginScreen.hidden = true;
+            welcomeScreen.hidden = true;
+            loadingScreen.hidden = true;
+            setupScreen.querySelector('[data-setup-title]').textContent = reconfigure
+                ? 'Ponowna konfiguracja'
+                : 'Witamy w macOS Catalina';
+            setupScreen.querySelector('[data-setup-description]').textContent = reconfigure
+                ? 'Zmień nazwę użytkownika, hasło lub wygląd pulpitu.'
+                : 'Skonfiguruj swoje konto i wygląd pulpitu.';
+            const hasPassword = typeof savedState.passwordHash === 'string' &&
+                typeof savedState.passwordSalt === 'string';
+            setupScreen.querySelector('[data-setup-note]').textContent = reconfigure
+                ? (hasPassword
+                    ? 'Pozostaw oba pola hasła puste, aby zachować obecne hasło.'
+                    : 'Pozostaw zaznaczoną opcję bez hasła albo wpisz nowe hasło.')
+                : 'To konto działa wyłącznie w tej symulacji przeglądarkowej.';
+            setupScreen.querySelector('#setup-username').value = reconfigure ? savedState.userName : '';
+            setupScreen.querySelector('[name="theme"]').value = preferenceValues.theme;
+            setupScreen.querySelector('#setup-password').value = '';
+            setupScreen.querySelector('#setup-password-confirm').value = '';
+            const skipPassword = setupScreen.querySelector('[data-setup-skip-password]');
+            skipPassword.checked = reconfigure && !hasPassword;
+            updateSetupPasswordFields(skipPassword.checked);
+            setupScreen.querySelector('[data-setup-cancel]').hidden = !reconfigure;
+            setupScreen.querySelector('button[type="submit"]').textContent = reconfigure
+                ? 'Zapisz konfigurację'
+                : 'Zakończ konfigurację';
+            setupError.textContent = '';
+            setupScreen.querySelector('#setup-username').focus();
+        }
+
+        function showLoginScreen() {
+            window.clearTimeout(systemTransitionTimer);
+            systemScreen.hidden = false;
+            setupScreen.hidden = true;
+            loginScreen.hidden = false;
+            welcomeScreen.hidden = true;
+            loadingScreen.hidden = true;
+            const username = typeof savedState.userName === 'string' && savedState.userName.trim()
+                ? savedState.userName : 'Użytkownik';
+            loginScreen.querySelector('[data-login-username]').textContent = username;
+            document.querySelectorAll('[data-current-user]').forEach(label => {
+                label.textContent = username;
+            });
+            const needsPassword = typeof savedState.passwordHash === 'string' && typeof savedState.passwordSalt === 'string';
+            const passwordLabel = loginScreen.querySelector('[data-login-password-label]');
+            passwordLabel.hidden = !needsPassword;
+            passwordInput.required = needsPassword;
+            passwordInput.value = '';
+            loginError.textContent = '';
+            loginScreen.querySelector('[data-login-form] button[type="submit"]').textContent =
+                needsPassword ? 'Zaloguj' : 'Zaloguj — bez hasła';
+            if (needsPassword) passwordInput.focus();
+            else loginScreen.querySelector('[data-login-form] button[type="submit"]').focus();
+        }
+
+        function showWelcomeScreen() {
+            window.clearTimeout(systemTransitionTimer);
+            systemScreen.hidden = false;
+            setupScreen.hidden = true;
+            loginScreen.hidden = true;
+            welcomeScreen.hidden = false;
+            loadingScreen.hidden = true;
+            welcomeScreen.querySelector('[data-welcome-message]').textContent =
+                `Hello / Cześć, ${savedState.userName}!`;
+            systemTransitionTimer = window.setTimeout(showLoginScreen, 3000);
+        }
+
+        function showLoadingScreen(destination, message) {
+            window.clearTimeout(systemTransitionTimer);
+            systemScreen.hidden = false;
+            setupScreen.hidden = true;
+            loginScreen.hidden = true;
+            welcomeScreen.hidden = true;
+            loadingScreen.hidden = false;
+            loadingMessage.textContent = message;
+            systemTransitionTimer = window.setTimeout(() => {
+                if (destination === 'login') {
+                    if (savedState.setupComplete === true && typeof savedState.userName === 'string') {
+                        showLoginScreen();
+                    } else {
+                        showSetupScreen();
+                    }
+                } else {
+                    systemScreen.hidden = true;
+                }
+            }, 1800);
+        }
+
+        function minimizeWindow(appWindow) {
+            if (appWindow.classList.contains('is-minimized') || appWindow.classList.contains('is-minimizing')) return;
+            appWindow.dataset.restoreLeft = appWindow.style.left;
+            appWindow.dataset.restoreTop = appWindow.style.top;
+            appWindow.dataset.restoreWidth = appWindow.style.width;
+            appWindow.classList.remove('is-maximized');
+            appWindow.classList.remove('is-active');
+            let finished = false;
+            const finish = () => {
+                if (finished || !appWindow.isConnected) return;
+                finished = true;
+                appWindow.classList.remove('is-minimizing');
+                appWindow.classList.add('is-minimized');
+                const minimized = [...windowLayer.querySelectorAll('.window.is-minimized')];
+                const columns = Math.max(1, Math.floor((window.innerWidth - 24) / 220));
+                const slot = minimized.indexOf(appWindow);
+                appWindow.style.left = `${12 + (slot % columns) * 220}px`;
+                appWindow.style.bottom = `${42 + Math.floor(slot / columns) * 48}px`;
+                appWindow.style.width = '210px';
+                appWindow.style.zIndex = ++nextZIndex;
+                const nextWindow = getActiveWindow();
+                if (nextWindow) focusWindow(nextWindow);
+                renderDock();
+                refreshWindowMenus();
+            };
+            if (preferenceValues.minimizeAnimations && !preferenceValues.reduceMotion) {
+                appWindow.classList.add('is-minimizing');
+                appWindow.addEventListener('animationend', event => {
+                    if (event.animationName === 'minimize-window') finish();
+                }, { once: true });
+                window.setTimeout(finish, 400);
+            } else {
+                finish();
+            }
+        }
+
+        function refreshWindowMenus() {
+            const windows = [...windowLayer.querySelectorAll('.window')];
+            renderDock();
+            renderDockSettings();
+            const windowList = document.querySelector('[data-window-list]');
+            windowList.replaceChildren();
+            if (!windows.length) {
+                const empty = document.createElement('div');
+                empty.className = 'menu-empty';
+                empty.textContent = 'Brak otwartych okien';
+                windowList.appendChild(empty);
+            }
+            windows.forEach(appWindow => {
+                const title = appWindow.querySelector('.window-title').textContent;
+                const button = document.createElement('button');
+                button.className = 'menu-command';
+                button.type = 'button';
+                button.setAttribute('role', 'menuitem');
+                button.dataset.menuWindowId = appWindow.dataset.windowId;
+                button.textContent = `${appWindow.classList.contains('is-active') ? '✓ ' : ''}${title}`;
+                windowList.appendChild(button);
+            });
+
+            windowLayer.querySelectorAll('[data-task-list]').forEach(list => {
+                list.replaceChildren();
+                if (!windows.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'menu-empty';
+                    empty.textContent = 'Brak uruchomionych aplikacji.';
+                    list.appendChild(empty);
+                    return;
+                }
+                windows.forEach(appWindow => {
+                    const row = document.createElement('div');
+                    row.className = 'task-row';
+                    const name = document.createElement('button');
+                    name.className = 'app-button task-name';
+                    name.type = 'button';
+                    name.dataset.taskAction = 'focus';
+                    name.dataset.windowId = appWindow.dataset.windowId;
+                    name.textContent = appWindow.querySelector('.window-title').textContent;
+                    const state = document.createElement('span');
+                    state.className = 'task-state';
+                    state.textContent = appWindow.classList.contains('is-minimized') ? 'Zminimalizowano' :
+                        appWindow.classList.contains('is-active') ? 'Aktywne' : 'Otwarte';
+                    const close = document.createElement('button');
+                    close.className = 'app-button';
+                    close.type = 'button';
+                    close.dataset.taskAction = 'close';
+                    close.dataset.windowId = appWindow.dataset.windowId;
+                    close.setAttribute('aria-label', `Zamknij ${appWindow.querySelector('.window-title').textContent}`);
+                    close.textContent = '✕';
+                    row.append(name, state, close);
+                    list.appendChild(row);
+                });
+            });
+        }
+
+        function openApp(name) {
+            const appWindow = document.createElement('section');
+            appWindow.className = `window is-active${name === 'Launchpad' ? ' launchpad-window' : ''}`;
+            appWindow.dataset.windowId = `app-window-${openedWindows + 1}`;
+            appWindow.setAttribute('aria-label', `${name} — okno aplikacji`);
+            appWindow.style.width = name === 'Launchpad' ? '760px' :
+                name === 'Notatki' ? '480px' : name === 'Kalkulator' ? '300px' : '600px';
+            appWindow.style.left = `${Math.max(16, Math.min(80 + (openedWindows % 7) * 28, window.innerWidth - 300))}px`;
+            appWindow.style.top = `${Math.max(48, Math.min(70 + (openedWindows % 7) * 24, window.innerHeight - 260))}px`;
+            appWindow.style.zIndex = ++nextZIndex;
+            openedWindows += 1;
+            appWindow.innerHTML = `<header class="title-bar"><div class="traffic-lights" aria-label="Sterowanie oknem"><button class="light red" type="button" data-window-action="close" aria-label="Zamknij okno" title="Zamknij"></button><button class="light yellow" type="button" data-window-action="minimize" aria-label="Minimalizuj okno" title="Minimalizuj"></button><button class="light green" type="button" data-window-action="maximize" aria-label="Maksymalizuj okno" title="Maksymalizuj"></button></div><span class="window-title"></span></header><div class="window-content"><h1></h1><div class="app-panel"></div></div>`;
+            appWindow.querySelector('.window-title').textContent = appDescriptions[name] || name;
+            appWindow.querySelector('h1').textContent = appDescriptions[name] || name;
+            appWindow.querySelector('.app-panel').innerHTML = appViews[name] || '<p>Aplikacja jest gotowa.</p>';
+            const wordDocument = appWindow.querySelector('[data-office-doc="word"]');
+            if (wordDocument) wordDocument.value = typeof savedState.officeDocs.word === 'string' ? savedState.officeDocs.word : '';
+            const excelSheet = appWindow.querySelector('.office-sheet');
+            if (excelSheet) {
+                const values = savedState.officeDocs.excel && typeof savedState.officeDocs.excel === 'object'
+                    ? savedState.officeDocs.excel : {};
+                const columns = ['A', 'B', 'C', 'D', 'E'];
+                const corner = document.createElement('span');
+                excelSheet.appendChild(corner);
+                columns.forEach(column => {
+                    const heading = document.createElement('strong');
+                    heading.className = 'office-cell';
+                    heading.textContent = column;
+                    excelSheet.appendChild(heading);
+                });
+                for (let row = 1; row <= 5; row += 1) {
+                    const heading = document.createElement('strong');
+                    heading.className = 'office-cell';
+                    heading.textContent = String(row);
+                    excelSheet.appendChild(heading);
+                    columns.forEach(column => {
+                        const cell = document.createElement('input');
+                        cell.className = 'office-cell';
+                        cell.type = 'text';
+                        cell.dataset.officeCell = `${column}${row}`;
+                        cell.setAttribute('aria-label', `Komórka ${column}${row}`);
+                        cell.value = typeof values[cell.dataset.officeCell] === 'string' ? values[cell.dataset.officeCell] : '';
+                        excelSheet.appendChild(cell);
+                    });
+                }
+            }
+            const glassSetting = appWindow.querySelector('[data-setting="glass"]');
+            const motionSetting = appWindow.querySelector('[data-setting="reduce-motion"]');
+            if (glassSetting) glassSetting.checked = preferenceValues.glassEnabled;
+            if (motionSetting) motionSetting.checked = preferenceValues.reduceMotion;
+            appWindow.querySelectorAll('[data-setting="icon-pack"]').forEach(select => {
+                select.value = preferenceValues.iconPack;
+            });
+            const settingCheckboxes = {
+                wifi: savedState.wifiEnabled,
+                bluetooth: savedState.bluetoothEnabled,
+                'low-power': preferenceValues.lowPowerMode,
+                notifications: preferenceValues.notificationsEnabled
+            };
+            Object.entries(settingCheckboxes).forEach(([setting, checked]) => {
+                const checkbox = appWindow.querySelector(`[data-setting="${setting}"]`);
+                if (checkbox) checkbox.checked = checked;
+            });
+            appWindow.querySelectorAll('.glass-control').forEach(control => {
+                const slider = control.querySelector('input[type="range"]');
+                if (!slider) return;
+                const prefKeys = {
+                    'menu-opacity': 'menuOpacity',
+                    'battery-level': 'batteryLevel',
+                    'dock-size': 'dockSize',
+                    'dock-magnification': 'dockMagnification'
+                };
+                const prefKey = prefKeys[slider.dataset.setting] || slider.dataset.setting;
+                slider.value = slider.dataset.setting === 'dock-magnification'
+                    ? preferenceValues.dockMagnification * 100 : preferenceValues[prefKey];
+                updateGlassControl(slider);
+            });
+            const batterySlider = appWindow.querySelector('[data-setting="battery-level"]');
+            if (batterySlider) {
+                batterySlider.value = preferenceValues.batteryLevel;
+                updateGlassControl(batterySlider);
+            }
+            const volumeSlider = appWindow.querySelector('[data-setting="volume"]');
+            if (volumeSlider) {
+                volumeSlider.value = preferenceValues.volume;
+                updateGlassControl(volumeSlider);
+            }
+            const accentPicker = appWindow.querySelector('[data-setting="accent"]');
+            if (accentPicker) accentPicker.value = preferenceValues.accentColor;
+            const dockHideToggle = appWindow.querySelector('[data-setting="dock-auto-hide"]');
+            if (dockHideToggle) dockHideToggle.checked = preferenceValues.dockAutoHide;
+            const minimizeAnimationsToggle = appWindow.querySelector('[data-setting="minimize-animations"]');
+            if (minimizeAnimationsToggle) minimizeAnimationsToggle.checked = preferenceValues.minimizeAnimations;
+            appWindow.querySelectorAll('[data-theme]').forEach(button => {
+                button.setAttribute('aria-pressed', String(button.dataset.theme === preferenceValues.theme));
+            });
+            const noteInput = appWindow.querySelector('[data-note]');
+            if (noteInput) noteInput.value = savedState.note;
+            const messages = appWindow.querySelector('[data-messages]');
+            if (messages) {
+                savedState.messages.forEach(message => {
+                    const bubble = document.createElement('p');
+                    bubble.textContent = `Ty: ${message}`;
+                    messages.appendChild(bubble);
+                });
+            }
+            windowLayer.appendChild(appWindow);
+            focusWindow(appWindow);
+            refreshWindowMenus();
+
+            const titleBar = appWindow.querySelector('.title-bar');
+            titleBar.addEventListener('pointerdown', event => {
+                if (event.target.closest('button') || appWindow.classList.contains('is-maximized')) return;
+                if (appWindow.classList.contains('is-minimized')) {
+                    focusWindow(appWindow);
+                    return;
+                }
+                focusWindow(appWindow);
+                const startX = event.clientX;
+                const startY = event.clientY;
+                const startLeft = appWindow.offsetLeft;
+                const startTop = appWindow.offsetTop;
+                titleBar.setPointerCapture(event.pointerId);
+                const move = moveEvent => {
+                    const maxLeft = Math.max(0, window.innerWidth - appWindow.offsetWidth);
+                    appWindow.style.left = `${Math.max(0, Math.min(startLeft + moveEvent.clientX - startX, maxLeft))}px`;
+                    appWindow.style.top = `${Math.max(28, Math.min(startTop + moveEvent.clientY - startY, window.innerHeight - 48))}px`;
+                };
+                const stop = () => {
+                    titleBar.removeEventListener('pointermove', move);
+                    titleBar.removeEventListener('pointerup', stop);
+                    titleBar.removeEventListener('pointercancel', stop);
+                };
+                titleBar.addEventListener('pointermove', move);
+                titleBar.addEventListener('pointerup', stop);
+                titleBar.addEventListener('pointercancel', stop);
+            });
+            titleBar.addEventListener('dblclick', event => {
+                if (event.target.closest('button')) return;
+                if (appWindow.classList.contains('is-minimized')) focusWindow(appWindow);
+                appWindow.classList.toggle('is-maximized');
+                focusWindow(appWindow);
+            });
+        }
+
+        document.querySelectorAll('.desktop [data-app]').forEach(icon => {
+            icon.addEventListener('click', () => openApp(icon.dataset.app));
+        });
+
+        dock.addEventListener('click', event => {
+            const button = event.target.closest('[data-app]');
+            if (button) openApp(button.dataset.app);
+        });
+
+        function togglePinnedApp(name) {
+            const index = pinnedApps.indexOf(name);
+            if (index >= 0) pinnedApps.splice(index, 1);
+            else if (defaultPinnedApps.includes(name)) pinnedApps.push(name);
+            savedState.pinnedApps = [...pinnedApps];
+            renderDock();
+            renderDockSettings();
+            persistState();
+        }
+
+        function addDockMenuCommand(label, action, appName) {
+            const button = document.createElement('button');
+            button.className = 'menu-command';
+            button.type = 'button';
+            button.setAttribute('role', 'menuitem');
+            button.dataset.dockAction = action;
+            if (appName) button.dataset.appName = appName;
+            button.textContent = label;
+            dockContextMenu.appendChild(button);
+        }
+
+        dock.addEventListener('contextmenu', event => {
+            event.preventDefault();
+            const contextDockApp = event.target.closest('[data-app]')?.dataset.app || null;
+            dockContextMenu.replaceChildren();
+            addDockMenuCommand('Ustawienia Docka…', 'settings');
+            const separator = document.createElement('div');
+            separator.className = 'menu-separator';
+            dockContextMenu.appendChild(separator);
+            if (contextDockApp) {
+                addDockMenuCommand(`Otwórz ${contextDockApp}`, 'open', contextDockApp);
+                const title = appDescriptions[contextDockApp] || contextDockApp;
+                const appWindow = [...windowLayer.querySelectorAll('.window')]
+                    .find(item => item.querySelector('.window-title')?.textContent === title);
+                if (appWindow && !appWindow.classList.contains('is-minimized')) {
+                    addDockMenuCommand(`Minimalizuj ${contextDockApp}`, 'minimize', contextDockApp);
+                    addDockMenuCommand(`Zamknij ${contextDockApp}`, 'close', contextDockApp);
+                }
+                addDockMenuCommand(
+                    pinnedApps.includes(contextDockApp) ? 'Odepnij z Docka' : 'Przypnij do Docka',
+                    'toggle-pin', contextDockApp
+                );
+            } else {
+                defaultPinnedApps.forEach(name => {
+                    addDockMenuCommand(
+                        `${pinnedApps.includes(name) ? 'Odepnij' : 'Przypnij'} ${name}`,
+                        'toggle-pin', name
+                    );
+                });
+            }
+            const menuWidth = 230;
+            dockContextMenu.hidden = false;
+            const menuHeight = Math.min(dockContextMenu.scrollHeight, window.innerHeight - 16);
+            dockContextMenu.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - menuWidth - 8))}px`;
+            dockContextMenu.style.top = `${Math.max(8, Math.min(event.clientY - menuHeight, window.innerHeight - menuHeight - 8))}px`;
+        });
+
+        dockContextMenu.addEventListener('click', event => {
+            const button = event.target.closest('[data-dock-action]');
+            if (!button) return;
+            const name = button.dataset.appName;
+            const title = appDescriptions[name] || name;
+            if (button.dataset.dockAction === 'settings') openSettingsCategory('dock');
+            if (button.dataset.dockAction === 'open') openApp(name);
+            if (button.dataset.dockAction === 'toggle-pin') togglePinnedApp(name);
+            if (button.dataset.dockAction === 'minimize') {
+                const appWindow = [...windowLayer.querySelectorAll('.window')]
+                    .find(item => item.querySelector('.window-title')?.textContent === title);
+                if (appWindow) minimizeWindow(appWindow);
+            }
+            if (button.dataset.dockAction === 'close') {
+                windowLayer.querySelectorAll('.window').forEach(appWindow => {
+                    if (appWindow.querySelector('.window-title')?.textContent === title) appWindow.remove();
+                });
+                refreshWindowMenus();
+            }
+            dockContextMenu.hidden = true;
+        });
+
+        document.addEventListener('pointerdown', event => {
+            if (!event.target.closest('#dock-context-menu')) dockContextMenu.hidden = true;
+        });
+
+        windowLayer.addEventListener('pointerdown', event => {
+            const appWindow = event.target.closest('.window');
+            if (appWindow) focusWindow(appWindow);
+        });
+
+        windowLayer.addEventListener('click', event => {
+            const appWindow = event.target.closest('.window');
+            if (!appWindow) return;
+            const launchpadApp = event.target.closest('[data-launch-app]');
+            if (launchpadApp) {
+                openApp(launchpadApp.dataset.launchApp);
+                return;
+            }
+            const settingsCategory = event.target.closest('[data-settings-category]');
+            if (settingsCategory) {
+                const settingsWindow = settingsCategory.closest('.window');
+                settingsWindow.querySelectorAll('[data-settings-category]').forEach(button => {
+                    button.setAttribute('aria-pressed', String(button === settingsCategory));
+                });
+                settingsWindow.querySelectorAll('[data-settings-panel]').forEach(panel => {
+                    panel.hidden = panel.dataset.settingsPanel !== settingsCategory.dataset.settingsCategory;
+                });
+                return;
+            }
+
+            const themeButton = event.target.closest('[data-theme]');
+            if (themeButton) {
+                applyTheme(themeButton.dataset.theme);
+                return;
+            }
+
+            const settingsAppButton = event.target.closest('[data-settings-app]');
+            if (settingsAppButton) {
+                openApp(settingsAppButton.dataset.settingsApp);
+                return;
+            }
+            const dockPinButton = event.target.closest('[data-dock-pin]');
+            if (dockPinButton) {
+                togglePinnedApp(dockPinButton.dataset.dockPin);
+                return;
+            }
+
+            if (event.target.closest('[data-manager-action="close-all"]')) {
+                closeAllWindows();
+                return;
+            }
+            const taskButton = event.target.closest('[data-task-action]');
+            if (taskButton) {
+                const taskWindow = [...windowLayer.querySelectorAll('.window')]
+                    .find(window => window.dataset.windowId === taskButton.dataset.windowId);
+                if (taskWindow && taskButton.dataset.taskAction === 'close') {
+                    taskWindow.remove();
+                    refreshWindowMenus();
+                } else if (taskWindow) {
+                    focusWindow(taskWindow);
+                }
+                return;
+            }
+
+            const windowAction = event.target.closest('[data-window-action]')?.dataset.windowAction;
+            if (windowAction === 'close') {
+                appWindow.remove();
+                refreshWindowMenus();
+            }
+            if (windowAction === 'minimize') {
+                minimizeWindow(appWindow);
+            }
+            if (windowAction === 'maximize') {
+                if (appWindow.classList.contains('is-minimized')) focusWindow(appWindow);
+                appWindow.classList.toggle('is-maximized');
+                focusWindow(appWindow);
+            }
+
+            const action = event.target.closest('[data-action]')?.dataset.action;
+            const status = appWindow.querySelector('.app-status');
+            if (action === 'airdrop') status.textContent = 'Wysyłanie… Połączono z urządzeniem.';
+            if (action === 'empty-trash') status.textContent = 'Kosz został opróżniony.';
+            if (action === 'folder') status.textContent = `Otwarto folder: ${event.target.textContent.trim()}.`;
+            if (action === 'play') {
+                event.target.textContent = event.target.textContent === '▶️' ? '⏸️' : '▶️';
+                status.textContent = event.target.textContent === '⏸️' ? 'Odtwarzanie: Liquid Dreams' : 'Wstrzymano';
+            }
+            if (action === 'previous' || action === 'next') status.textContent = 'Teraz odtwarzany: Liquid Dreams';
+
+            const key = event.target.closest('[data-key]')?.dataset.key;
+            if (key) handleCalculatorKey(appWindow, key);
+        });
+
+        const menuGroups = document.querySelectorAll('.menu-group, .menu-status');
+
+        function closeMenus() {
+            menuGroups.forEach(group => {
+                const trigger = group.querySelector(':scope > button');
+                const dropdown = group.querySelector('.menu-dropdown');
+                if (trigger) trigger.setAttribute('aria-expanded', 'false');
+                if (dropdown) dropdown.hidden = true;
+            });
+        }
+
+        function runMenuAction(action, button) {
+            const activeWindow = getActiveWindow();
+            if (action === 'about') openApp('This Mac');
+            if (action === 'task-manager') openApp('Menedżer zadań');
+            if (action === 'close-all') closeAllWindows();
+            if (action === 'login-screen') showLoginScreen();
+            if (action === 'restart-system') showLoadingScreen('login', 'Ponowne uruchamianie macOS…');
+            if (action === 'open-app') openApp(button.dataset.appName);
+            if (action === 'open-settings-category') openSettingsCategory(button.dataset.category);
+            if (action === 'close-active' && activeWindow) {
+                activeWindow.remove();
+                refreshWindowMenus();
+            }
+            if (action === 'minimize-active' && activeWindow) minimizeWindow(activeWindow);
+            if (action === 'toggle-maximize' && activeWindow) {
+                if (activeWindow.classList.contains('is-minimized')) focusWindow(activeWindow);
+                activeWindow.classList.toggle('is-maximized');
+                focusWindow(activeWindow);
+            }
+            if (action === 'show-desktop') {
+                [...windowLayer.querySelectorAll('.window:not(.is-minimized)')].forEach(minimizeWindow);
+            }
+            if (action === 'help') openApp('Pomoc');
+            if (action === 'edit') {
+                const command = button.dataset.command;
+                document.execCommand(command);
+            }
+            if (action === 'wifi') {
+                savedState.wifiEnabled = !savedState.wifiEnabled;
+                updateWifiUI();
+                persistState();
+            }
+        }
+
+        document.addEventListener('click', event => {
+            const trigger = event.target.closest('.menu-group > button, .menu-status > button');
+            if (trigger) {
+                const group = trigger.parentElement;
+                const dropdown = group.querySelector('.menu-dropdown');
+                const wasOpen = trigger.getAttribute('aria-expanded') === 'true';
+                closeMenus();
+                if (!wasOpen) {
+                    trigger.setAttribute('aria-expanded', 'true');
+                    dropdown.hidden = false;
+                    if (dropdown.querySelector('[data-spotlight]')) {
+                        dropdown.querySelector('[data-spotlight]').focus();
+                    }
+                }
+                return;
+            }
+
+            const menuWindowButton = event.target.closest('[data-menu-window-id]');
+            if (menuWindowButton) {
+                const appWindow = [...windowLayer.querySelectorAll('.window')]
+                    .find(window => window.dataset.windowId === menuWindowButton.dataset.menuWindowId);
+                if (appWindow) focusWindow(appWindow);
+                closeMenus();
+                return;
+            }
+
+            const menuCommand = event.target.closest('[data-menu-action]');
+            if (menuCommand) {
+                runMenuAction(menuCommand.dataset.menuAction, menuCommand);
+                closeMenus();
+                return;
+            }
+
+            if (!event.target.closest('.menu-dropdown')) closeMenus();
+        });
+
+        document.addEventListener('input', event => {
+            if (!event.target.matches('[data-spotlight]')) return;
+            const query = event.target.value.trim().toLocaleLowerCase('pl-PL');
+            const results = event.target.parentElement.querySelector('[data-search-results]');
+            results.replaceChildren();
+            const apps = ['Finder', 'Safari', 'Wiadomości', 'Zdjęcia', 'Muzyka', 'Ustawienia', 'Notatki', 'Kalkulator', 'Menedżer zadań', 'Launchpad', 'Mail', 'Mapy', 'FaceTime', 'Kalendarz', 'Kontakty', 'Przypomnienia', 'Podcasty', 'App Store', 'Word', 'Excel', 'Office', 'This Mac', 'AirDrop', 'Kosz'];
+            apps.filter(name => !query || name.toLocaleLowerCase('pl-PL').includes(query)).slice(0, 6).forEach(name => {
+                const button = document.createElement('button');
+                button.className = 'menu-command';
+                button.type = 'button';
+                button.dataset.menuAction = 'open-app';
+                button.dataset.appName = name;
+                button.textContent = name;
+                results.appendChild(button);
+            });
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !systemScreen.hidden) {
+                event.preventDefault();
+                if (!loginScreen.hidden) passwordInput.focus();
+                return;
+            }
+            const command = event.metaKey || event.ctrlKey;
+            if (command && event.altKey && event.key.toLowerCase() === 'escape') {
+                event.preventDefault();
+                closeMenus();
+                openApp('Menedżer zadań');
+                return;
+            }
+            if (event.key === 'Escape') {
+                dockContextMenu.hidden = true;
+                closeMenus();
+                return;
+            }
+            if (!command) return;
+            const key = event.key.toLowerCase();
+            if (key === 'w' && (event.altKey || event.shiftKey)) {
+                event.preventDefault();
+                closeAllWindows();
+            } else if (key === 'w' && !event.altKey && !event.shiftKey) {
+                const activeWindow = getActiveWindow();
+                if (activeWindow) {
+                    event.preventDefault();
+                    activeWindow.remove();
+                    refreshWindowMenus();
+                }
+            } else if (key === 'm' && !event.altKey) {
+                const activeWindow = getActiveWindow();
+                if (activeWindow) {
+                    event.preventDefault();
+                    minimizeWindow(activeWindow);
+                }
+            } else if (key === 'n' && !event.altKey) {
+                event.preventDefault();
+                openApp('Finder');
+            }
+        });
+
+        setupScreen.querySelector('[data-setup-skip-password]').addEventListener('change', event => {
+            updateSetupPasswordFields(event.target.checked);
+        });
+
+        setupScreen.querySelector('[data-setup-cancel]').addEventListener('click', showLoginScreen);
+
+        loginScreen.querySelector('[data-login-action="reconfigure"]').addEventListener('click', () => {
+            showSetupScreen(true);
+        });
+
+        loginScreen.querySelector('[data-login-action="factory-reset"]').addEventListener('click', () => {
+            loginError.textContent = '';
+            const confirmed = window.confirm(
+                'Przywrócenie ustawień fabrycznych usunie konto, preferencje i dane zapisane w tej symulacji. Czy kontynuować?'
+            );
+            if (!confirmed) return;
+            try {
+                localStorage.removeItem(storageKey);
+                window.location.reload();
+            } catch (error) {
+                console.error('Nie udało się przywrócić ustawień fabrycznych.', error);
+                loginError.textContent = 'Nie udało się przywrócić ustawień fabrycznych. Spróbuj ponownie.';
+            }
+        });
+
+        setupScreen.addEventListener('submit', async event => {
+            event.preventDefault();
+            setupError.textContent = '';
+            const username = setupScreen.querySelector('#setup-username').value.trim();
+            const password = setupScreen.querySelector('#setup-password').value;
+            const passwordConfirm = setupScreen.querySelector('#setup-password-confirm').value;
+            const skipPassword = setupScreen.querySelector('[data-setup-skip-password]').checked;
+            const theme = setupScreen.querySelector('[name="theme"]').value;
+            const hasExistingPassword = typeof savedState.passwordHash === 'string' &&
+                typeof savedState.passwordSalt === 'string';
+            const keepExistingPassword = isReconfiguration && hasExistingPassword &&
+                !skipPassword && !password && !passwordConfirm;
+            if (!username) {
+                setupError.textContent = 'Wpisz nazwę użytkownika.';
+                return;
+            }
+            if (!themes[theme]) {
+                setupError.textContent = 'Wybierz prawidłowy motyw.';
+                return;
+            }
+            if (!skipPassword && !keepExistingPassword &&
+                (password.length < 4 || password !== passwordConfirm)) {
+                setupError.textContent = password.length < 4
+                    ? 'Hasło musi mieć co najmniej 4 znaki albo wybierz logowanie bez hasła.'
+                    : 'Wpisane hasła nie są takie same.';
+                return;
+            }
+
+            try {
+                if (skipPassword) {
+                    delete savedState.passwordHash;
+                    delete savedState.passwordSalt;
+                } else if (!keepExistingPassword) {
+                    const salt = crypto.getRandomValues(new Uint8Array(16));
+                    const passwordHash = await derivePasswordHash(password, salt);
+                    savedState.passwordSalt = encodeBase64(salt);
+                    savedState.passwordHash = encodeBase64(passwordHash);
+                }
+                savedState.userName = username;
+                savedState.setupComplete = true;
+                applyTheme(theme);
+                showWelcomeScreen();
+            } catch (error) {
+                console.error('Nie udało się skonfigurować konta.', error);
+                setupError.textContent = 'Nie udało się skonfigurować konta. Spróbuj ponownie.';
+            }
+        });
+
+        loginScreen.querySelector('[data-login-form]').addEventListener('submit', async event => {
+            event.preventDefault();
+            loginError.textContent = '';
+            if (typeof savedState.passwordHash === 'string' && typeof savedState.passwordSalt === 'string') {
+                try {
+                    const salt = Uint8Array.from(atob(savedState.passwordSalt), character => character.charCodeAt(0));
+                    const candidate = await derivePasswordHash(passwordInput.value, salt);
+                    const expected = Uint8Array.from(atob(savedState.passwordHash), character => character.charCodeAt(0));
+                    if (!bytesMatch(candidate, expected)) {
+                        loginError.textContent = 'Nieprawidłowe hasło. Spróbuj ponownie.';
+                        passwordInput.select();
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Nie udało się zweryfikować hasła.', error);
+                    loginError.textContent = 'Nie udało się zweryfikować hasła w tej przeglądarce.';
+                    return;
+                }
+            }
+            showLoadingScreen('desktop', 'Logowanie…');
+        });
+
+        refreshWindowMenus();
+
+        windowLayer.addEventListener('submit', event => {
+            const form = event.target.closest('form[data-form]');
+            if (!form) return;
+            event.preventDefault();
+            const appWindow = form.closest('.window');
+            const input = form.querySelector('input');
+            const status = appWindow.querySelector('.app-status');
+            if (form.dataset.form === 'search') {
+                const query = input.value.trim();
+                if (query) status.textContent = `Wyszukiwanie: ${query}`;
+            } else if (form.dataset.form === 'message') {
+                const message = input.value.trim();
+                if (message) {
+                    const bubble = document.createElement('p');
+                    bubble.textContent = `Ty: ${message}`;
+                    appWindow.querySelector('[data-messages]').appendChild(bubble);
+                    savedState.messages.push(message);
+                    savedState.messages = savedState.messages.slice(-100);
+                    persistState();
+                    input.value = '';
+                }
+            }
+        });
+
+        windowLayer.addEventListener('change', event => {
+            const setting = event.target.dataset.setting;
+            if (setting === 'dock-auto-hide') {
+                preferenceValues.dockAutoHide = event.target.checked;
+                updateDockLayout();
+                persistState();
+                return;
+            }
+            if (setting === 'minimize-animations') {
+                preferenceValues.minimizeAnimations = event.target.checked;
+                persistState();
+                return;
+            }
+            if (setting === 'icon-pack') {
+                preferenceValues.iconPack = ['emoji', 'pastel', 'minimal'].includes(event.target.value)
+                    ? event.target.value : 'emoji';
+                applyIconPack();
+                persistState();
+                return;
+            }
+            if (setting === 'wifi') {
+                savedState.wifiEnabled = event.target.checked;
+                updateWifiUI();
+                persistState();
+            }
+            if (setting === 'bluetooth') {
+                savedState.bluetoothEnabled = event.target.checked;
+                updateSystemIndicators();
+                windowLayer.querySelectorAll('[data-setting="bluetooth"]').forEach(input => {
+                    input.checked = savedState.bluetoothEnabled;
+                });
+                persistState();
+            }
+            if (setting === 'low-power') {
+                preferenceValues.lowPowerMode = event.target.checked;
+                updateSystemIndicators();
+                persistState();
+            }
+            if (setting === 'notifications') {
+                preferenceValues.notificationsEnabled = event.target.checked;
+                updateSystemIndicators();
+                persistState();
+            }
+            if (setting === 'glass') {
+                preferenceValues.glassEnabled = event.target.checked;
+                document.body.classList.toggle('no-glass', !preferenceValues.glassEnabled);
+                persistState();
+            }
+            if (setting === 'reduce-motion') {
+                preferenceValues.reduceMotion = event.target.checked;
+                document.body.classList.toggle('reduce-motion', preferenceValues.reduceMotion);
+                persistState();
+            }
+        });
+
+        windowLayer.addEventListener('input', event => {
+            const setting = event.target.dataset.setting;
+            if (event.target.matches('[data-office-doc="word"]')) {
+                savedState.officeDocs.word = event.target.value;
+                persistState();
+                return;
+            }
+            if (event.target.matches('[data-office-cell]')) {
+                const values = savedState.officeDocs.excel && typeof savedState.officeDocs.excel === 'object'
+                    ? savedState.officeDocs.excel : (savedState.officeDocs.excel = {});
+                values[event.target.dataset.officeCell] = event.target.value;
+                persistState();
+                return;
+            }
+            if (setting === 'dock-size' || setting === 'dock-magnification') {
+                if (setting === 'dock-size') {
+                    preferenceValues.dockSize = clamp(event.target.value, 36, 72, preferenceValues.dockSize);
+                } else {
+                    preferenceValues.dockMagnification = clamp(event.target.value / 100, 1, 1.6, preferenceValues.dockMagnification);
+                }
+                windowLayer.querySelectorAll(`[data-setting="${setting}"]`).forEach(input => {
+                    input.value = setting === 'dock-size' ? preferenceValues.dockSize :
+                        preferenceValues.dockMagnification * 100;
+                    updateGlassControl(input);
+                });
+                updateDockLayout();
+                persistState();
+                return;
+            }
+            if (setting === 'battery-level' || setting === 'volume') {
+                const prefKey = setting === 'battery-level' ? 'batteryLevel' : 'volume';
+                preferenceValues[prefKey] = clamp(event.target.value, 0, 100, preferenceValues[prefKey]);
+                windowLayer.querySelectorAll(`[data-setting="${setting}"]`).forEach(input => {
+                    input.value = preferenceValues[prefKey];
+                    updateGlassControl(input);
+                });
+                updateSystemIndicators();
+                persistState();
+                return;
+            }
+            if (setting === 'accent') {
+                if (!/^#[0-9a-f]{6}$/i.test(event.target.value)) return;
+                preferenceValues.accentColor = event.target.value;
+                document.body.style.setProperty('--accent-color', preferenceValues.accentColor);
+                persistState();
+                return;
+            }
+            if (setting === 'note') {
+                savedState.note = event.target.value;
+                persistState();
+                return;
+            }
+            if (setting === 'menu-opacity') {
+                preferenceValues.menuOpacity = clamp(event.target.value, 0, 100, preferenceValues.menuOpacity);
+                document.body.style.setProperty('--menu-opacity', preferenceValues.menuOpacity / 100);
+                document.body.classList.toggle('menu-transparent', preferenceValues.menuOpacity === 0);
+                windowLayer.querySelectorAll('[data-setting="menu-opacity"]').forEach(updateGlassControl);
+                persistState();
+                return;
+            }
+            if (!['opacity', 'blur', 'saturation'].includes(setting)) return;
+            const ranges = { opacity: [20, 95], blur: [0, 40], saturation: [100, 250] };
+            const [min, max] = ranges[setting];
+            const value = clamp(event.target.value, min, max, preferenceValues[setting]);
+            preferenceValues[setting] = value;
+            if (setting === 'opacity') {
+                const opacity = value / 100;
+                document.body.style.setProperty('--glass-opacity', opacity);
+                document.body.style.setProperty('--glass-secondary-opacity', opacity * 0.58);
+            } else if (setting === 'blur') {
+                document.body.style.setProperty('--glass-blur', `${value}px`);
+            } else {
+                document.body.style.setProperty('--glass-saturation', value / 100);
+            }
+            windowLayer.querySelectorAll(`[data-setting="${setting}"]`).forEach(updateGlassControl);
+            persistState();
+        });
+
+        function updateGlassControl(slider) {
+            const output = slider.parentElement.querySelector(`[data-value="${slider.dataset.setting}"]`);
+            if (!output) return;
+            const value = Number(slider.value);
+            output.value = ['blur', 'dock-size'].includes(slider.dataset.setting) ? `${value} px` : `${value}%`;
+            output.textContent = output.value;
+        }
+
+        function handleCalculatorKey(appWindow, key) {
+            const display = appWindow.querySelector('[data-display]');
+            const state = appWindow.calculator || (appWindow.calculator = { value: '0', first: null, operator: null, replace: false });
+            const calculate = (left, operator, right) => {
+                if (operator === '+') return left + right;
+                if (operator === '−') return left - right;
+                if (operator === '×') return left * right;
+                if (operator === '÷') return right === 0 ? NaN : left / right;
+                return right;
+            };
+            if (/^\d$/.test(key)) {
+                state.value = state.replace || state.value === '0' ? key : state.value + key;
+                state.replace = false;
+            } else if (key === 'C') {
+                state.value = '0';
+                state.first = null;
+                state.operator = null;
+                state.replace = false;
+            } else if (key === '=') {
+                if (state.operator && state.first !== null) {
+                    const result = calculate(state.first, state.operator, Number(state.value));
+                    state.value = Number.isFinite(result) ? String(Number(result.toFixed(8))) : 'Błąd';
+                    state.first = null;
+                    state.operator = null;
+                    state.replace = true;
+                }
+            } else {
+                if (state.operator && state.first !== null && !state.replace) {
+                    const result = calculate(state.first, state.operator, Number(state.value));
+                    state.value = Number.isFinite(result) ? String(Number(result.toFixed(8))) : 'Błąd';
+                }
+                state.first = Number(state.value) || 0;
+                state.operator = key;
+                state.replace = true;
+            }
+            display.textContent = state.value;
+        }
+
+        // Dock item hover effect with bounce
+        const dockItems = document.querySelectorAll('.dock-item');
+        dockItems.forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.2) translateY(-10px)';
+            });
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1) translateY(0)';
+            });
+        });
+
+        if (savedState.setupComplete === true && typeof savedState.userName === 'string') {
+            showLoginScreen();
+        } else {
+            showSetupScreen();
+        }
+    </script>
+</body>
+</html>
